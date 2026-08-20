@@ -1,0 +1,314 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-risk-scores-alter
+      author: aegisterra
+      changes:
+        - addColumn:
+            tableName: risk_scores
+            columns:
+              - column: { name: grade, type: "varchar(32)" }
+              - column: { name: window_start, type: timestamptz }
+              - column: { name: window_end, type: timestamptz }
+              - column: { name: components_json, type: text }
+              - column: { name: rule_set_code, type: "varchar(64)" }
+              - column: { name: rule_version, type: "varchar(32)" }
+              - column: { name: subject_type, type: "varchar(32)", defaultValue: FARM }
+              - column: { name: district_code, type: "varchar(64)" }
+        - createIndex:
+            indexName: idx_risk_scores_window
+            tableName: risk_scores
+            columns:
+              - column: { name: farm_id }
+              - column: { name: window_start }
+              - column: { name: window_end }
+        - createIndex:
+            indexName: idx_risk_scores_rule
+            tableName: risk_scores
+            columns:
+              - column: { name: rule_set_code }
+              - column: { name: rule_version }
+        - createIndex:
+            indexName: idx_risk_scores_district
+            tableName: risk_scores
+            columns:
+              - column: { name: district_code }
+
+  - changeSet:
+      id: 019-vegetation-indices-alter
+      author: aegisterra
+      comment: 8B ownership columns for vegetation products
+      changes:
+        - addColumn:
+            tableName: vegetation_indices
+            columns:
+              - column: { name: district_code, type: "varchar(64)" }
+              - column: { name: quality_flag, type: "varchar(32)" }
+              - column: { name: source, type: "varchar(64)" }
+              - column: { name: rule_version, type: "varchar(32)" }
+        - createIndex:
+            indexName: idx_vegetation_indices_district
+            tableName: vegetation_indices
+            columns:
+              - column: { name: district_code }
+
+  - changeSet:
+      id: 019-climate-rule-sets
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_rule_sets
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: rule_version, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: name, type: "varchar(255)", constraints: { nullable: false } }
+              - column: { name: description, type: "varchar(2000)" }
+              - column: { name: weights_json, type: text, constraints: { nullable: false } }
+              - column: { name: thresholds_json, type: text }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_climate_rule_sets_code_ver_active ON climate_rule_sets (code, rule_version) WHERE deleted = false;
+
+  - changeSet:
+      id: 019-climate-alerts
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_alerts
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: alert_number, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: alert_type, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: severity, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: scope_type, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: scope_id, type: "varchar(128)" }
+              - column: { name: farm_id, type: uuid }
+              - column: { name: district_code, type: "varchar(64)" }
+              - column: { name: geom, type: "geometry(Geometry,4326)" }
+              - column: { name: title, type: "varchar(255)" }
+              - column: { name: message, type: "varchar(2000)" }
+              - column: { name: valid_from, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: valid_to, type: timestamptz }
+              - column: { name: rule_set_code, type: "varchar(64)" }
+              - column: { name: rule_version, type: "varchar(32)" }
+              - column: { name: evidence_json, type: text }
+              - column: { name: acknowledged_at, type: timestamptz }
+              - column: { name: acknowledged_by, type: uuid }
+              - column: { name: resolved_at, type: timestamptz }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_climate_alerts_number_active ON climate_alerts (alert_number) WHERE deleted = false;
+        - createIndex:
+            indexName: idx_climate_alerts_type_status
+            tableName: climate_alerts
+            columns:
+              - column: { name: alert_type }
+              - column: { name: status }
+        - createIndex:
+            indexName: idx_climate_alerts_farm
+            tableName: climate_alerts
+            columns:
+              - column: { name: farm_id }
+        - createIndex:
+            indexName: idx_climate_alerts_district
+            tableName: climate_alerts
+            columns:
+              - column: { name: district_code }
+
+  - changeSet:
+      id: 019-farm-climate-profiles
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: farm_climate_profiles
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: farm_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: rule_set_code, type: "varchar(64)" }
+              - column: { name: rule_version, type: "varchar(32)" }
+              - column: { name: profile_json, type: text, constraints: { nullable: false } }
+              - column: { name: generated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            constraintName: fk_farm_climate_profiles_farm
+            baseTableName: farm_climate_profiles
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_farm_climate_profiles_farm
+            tableName: farm_climate_profiles
+            columns:
+              - column: { name: farm_id }
+              - column: { name: generated_at }
+
+  - changeSet:
+      id: 019-climate-indicator-runs
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_indicator_runs
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: indicator_type, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: subject_type, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: subject_id, type: "varchar(128)", constraints: { nullable: false } }
+              - column: { name: window_start, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: window_end, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: index_value, type: "numeric(18,6)" }
+              - column: { name: severity, type: "varchar(32)" }
+              - column: { name: metrics_json, type: text }
+              - column: { name: rule_set_code, type: "varchar(64)" }
+              - column: { name: rule_version, type: "varchar(32)" }
+              - column: { name: confidence, type: "numeric(5,4)" }
+              - column: { name: calculated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+        - createIndex:
+            indexName: idx_climate_indicator_runs_subject
+            tableName: climate_indicator_runs
+            columns:
+              - column: { name: indicator_type }
+              - column: { name: subject_type }
+              - column: { name: subject_id }
+              - column: { name: window_start }
+
+  - changeSet:
+      id: 019-district-risk-snapshots
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: district_risk_snapshots
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: district_code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: score, type: "numeric(12,6)", constraints: { nullable: false } }
+              - column: { name: grade, type: "varchar(32)" }
+              - column: { name: confidence, type: "numeric(5,4)" }
+              - column: { name: farm_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: open_alert_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: components_json, type: text }
+              - column: { name: window_start, type: timestamptz }
+              - column: { name: window_end, type: timestamptz }
+              - column: { name: rule_set_code, type: "varchar(64)" }
+              - column: { name: rule_version, type: "varchar(32)" }
+              - column: { name: calculated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - createIndex:
+            indexName: idx_district_risk_snapshots_district
+            tableName: district_risk_snapshots
+            columns:
+              - column: { name: district_code }
+              - column: { name: calculated_at }
+
+  - changeSet:
+      id: 019-climate-intel-jobs
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_intel_jobs
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: job_number, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: job_type, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: params_json, type: text }
+              - column: { name: subjects_processed, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: subjects_failed, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: started_at, type: timestamptz }
+              - column: { name: completed_at, type: timestamptz }
+              - column: { name: error_summary, type: "varchar(2000)" }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_climate_intel_jobs_number_active ON climate_intel_jobs (job_number) WHERE deleted = false;
+
+  - changeSet:
+      id: 019-climate-rule-set-seed
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO climate_rule_sets (id, code, rule_version, name, description, weights_json, thresholds_json, active, created_at, updated_at, version, status, deleted)
+              SELECT 'dddddddd-dddd-dddd-eeee-000000000001', 'CLIMATE_RISK_V1', '1.0.0', 'Default Climate Risk Rules',
+                     'Deterministic weighted farm/district risk composition',
+                     '{"drought":0.35,"flood":0.25,"rainfall":0.20,"vegetation":0.20}',
+                     '{"droughtWatch":0.3,"droughtWarning":0.5,"droughtSevere":0.7,"floodWatchMm24h":40,"floodWarningMm24h":80,"floodCriticalMm24h":120,"rainfallDeficitPct":0.4,"vegetationStress":0.35}',
+                     TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_rule_sets WHERE code = 'CLIMATE_RISK_V1' AND rule_version = '1.0.0' AND deleted = false);
+
+  - changeSet:
+      id: 019-climate-intel-permissions
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000095', 'climate-intel:read', 'Read climate intelligence', 'climate-intel', 'read', 'View risk scores and indicators', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'climate-intel:read' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000096', 'climate-intel:write', 'Write climate intelligence', 'climate-intel', 'write', 'Acknowledge alerts and update profiles', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'climate-intel:write' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000097', 'climate-intel:admin', 'Admin climate intelligence', 'climate-intel', 'admin', 'Recalculation and rule administration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'climate-intel:admin' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000098', 'alerts:climate', 'Climate alerts', 'alerts', 'climate', 'Manage climate alerts', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'alerts:climate' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000099', 'reports:climate-intel', 'Climate intel reports', 'reports', 'climate-intel', 'Climate intelligence reporting', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'reports:climate-intel' AND deleted = false);
+
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111001', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('climate-intel:read','climate-intel:write','climate-intel:admin','alerts:climate','reports:climate-intel') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111001' AND rp.permission_id = p.id AND rp.deleted = false
+                );
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111005', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('climate-intel:read','alerts:climate','reports:climate-intel') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111005' AND rp.permission_id = p.id AND rp.deleted = false
+                );
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111008', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('climate-intel:read','alerts:climate','reports:climate-intel') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111008' AND rp.permission_id = p.id AND rp.deleted = false
+                );

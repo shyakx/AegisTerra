@@ -1,0 +1,367 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-weather-stations
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: weather_stations
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: geom
+                  type: geometry(Point,4326)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: elevation_m
+                  type: numeric(10,2)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_weather_stations_code_active ON weather_stations (code) WHERE deleted = false;
+        - sql:
+            sql: CREATE INDEX idx_weather_stations_geom ON weather_stations USING GIST (geom);
+
+  - changeSet:
+      id: 008-weather-observations
+      author: aegisterra
+      comment: Append-only observation facts — no soft delete
+      changes:
+        - createTable:
+            tableName: weather_observations
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: station_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: observed_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: temperature_c
+                  type: numeric(6,2)
+              - column:
+                  name: rainfall_mm
+                  type: numeric(10,2)
+              - column:
+                  name: humidity_pct
+                  type: numeric(5,2)
+              - column:
+                  name: wind_speed_ms
+                  type: numeric(8,2)
+              - column:
+                  name: source
+                  type: varchar(64)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+        - addForeignKeyConstraint:
+            constraintName: fk_weather_observations_station
+            baseTableName: weather_observations
+            baseColumnNames: station_id
+            referencedTableName: weather_stations
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_weather_observations_station_time
+            tableName: weather_observations
+            columns:
+              - column:
+                  name: station_id
+              - column:
+                  name: observed_at
+        - createIndex:
+            indexName: idx_weather_observations_observed_at
+            tableName: weather_observations
+            columns:
+              - column:
+                  name: observed_at
+
+  - changeSet:
+      id: 008-satellite-observations
+      author: aegisterra
+      comment: Append-friendly EO products; optional farm link and footprint
+      changes:
+        - createTable:
+            tableName: satellite_observations
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: farm_id
+                  type: uuid
+              - column:
+                  name: product_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: observed_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cloud_cover_pct
+                  type: numeric(5,2)
+              - column:
+                  name: storage_uri
+                  type: varchar(1000)
+              - column:
+                  name: footprint
+                  type: geometry(MultiPolygon,4326)
+              - column:
+                  name: product_version
+                  type: varchar(64)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+        - addForeignKeyConstraint:
+            constraintName: fk_satellite_observations_farm
+            baseTableName: satellite_observations
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_satellite_observations_farm_time
+            tableName: satellite_observations
+            columns:
+              - column:
+                  name: farm_id
+              - column:
+                  name: observed_at
+        - createIndex:
+            indexName: idx_satellite_observations_observed_at
+            tableName: satellite_observations
+            columns:
+              - column:
+                  name: observed_at
+        - sql:
+            sql: CREATE INDEX idx_satellite_observations_footprint ON satellite_observations USING GIST (footprint);
+
+  - changeSet:
+      id: 008-vegetation-indices
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: vegetation_indices
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: farm_id
+                  type: uuid
+              - column:
+                  name: satellite_observation_id
+                  type: uuid
+              - column:
+                  name: index_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: index_value
+                  type: numeric(12,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: observed_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+        - addForeignKeyConstraint:
+            constraintName: fk_vegetation_indices_farm
+            baseTableName: vegetation_indices
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_vegetation_indices_observation
+            baseTableName: vegetation_indices
+            baseColumnNames: satellite_observation_id
+            referencedTableName: satellite_observations
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_vegetation_indices_farm_time
+            tableName: vegetation_indices
+            columns:
+              - column:
+                  name: farm_id
+              - column:
+                  name: observed_at
+
+  - changeSet:
+      id: 008-risk-scores
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: risk_scores
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: farm_id
+                  type: uuid
+              - column:
+                  name: policy_id
+                  type: uuid
+              - column:
+                  name: score
+                  type: numeric(12,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: confidence
+                  type: numeric(5,4)
+              - column:
+                  name: model_version
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: calculated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_risk_scores_farm
+            baseTableName: risk_scores
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_risk_scores_policy
+            baseTableName: risk_scores
+            baseColumnNames: policy_id
+            referencedTableName: insurance_policies
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_risk_scores_farm_status
+            tableName: risk_scores
+            columns:
+              - column:
+                  name: farm_id
+              - column:
+                  name: status
+        - createIndex:
+            indexName: idx_risk_scores_calculated_at
+            tableName: risk_scores
+            columns:
+              - column:
+                  name: calculated_at

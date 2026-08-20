@@ -1,0 +1,845 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-insurance-products
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: insurance_products
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: pricing_strategy_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: eligibility_json
+                  type: text
+              - column:
+                  name: config_json
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_insurance_products_code_active ON insurance_products (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 011-policy-types-product
+      author: aegisterra
+      changes:
+        - addColumn:
+            tableName: policy_types
+            columns:
+              - column:
+                  name: product_id
+                  type: uuid
+        - addForeignKeyConstraint:
+            constraintName: fk_policy_types_product
+            baseTableName: policy_types
+            baseColumnNames: product_id
+            referencedTableName: insurance_products
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 011-coverage-packages
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: coverage_packages
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: product_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: policy_type_id
+                  type: uuid
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: coverage_level_pct
+                  type: numeric(7,4)
+              - column:
+                  name: max_sum_insured
+                  type: numeric(19,4)
+              - column:
+                  name: config_json
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_coverage_packages_product
+            baseTableName: coverage_packages
+            baseColumnNames: product_id
+            referencedTableName: insurance_products
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_coverage_packages_product_code_active ON coverage_packages (product_id, code) WHERE deleted = false;
+
+  - changeSet:
+      id: 011-coverage-limits
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: coverage_limits
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: coverage_package_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: peril_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: limit_amount
+                  type: numeric(19,4)
+                  constraints: { nullable: false }
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_coverage_limits_package
+            baseTableName: coverage_limits
+            baseColumnNames: coverage_package_id
+            referencedTableName: coverage_packages
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 011-exclusions-waiting
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: policy_exclusions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: coverage_package_id
+                  type: uuid
+              - column:
+                  name: policy_id
+                  type: uuid
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(2000)
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - createTable:
+            tableName: waiting_periods
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: coverage_package_id
+                  type: uuid
+              - column:
+                  name: policy_id
+                  type: uuid
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: days
+                  type: int
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(1000)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+
+  - changeSet:
+      id: 011-premium-pricing-rules
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: premium_pricing_rules
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: rule_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: product_id
+                  type: uuid
+              - column:
+                  name: factor_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: priority
+                  type: int
+                  constraints: { nullable: false }
+              - column:
+                  name: value_json
+                  type: text
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_premium_pricing_rules_product
+            baseTableName: premium_pricing_rules
+            baseColumnNames: product_id
+            referencedTableName: insurance_products
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_premium_pricing_rules_code_active ON premium_pricing_rules (rule_code) WHERE deleted = false;
+
+  - changeSet:
+      id: 011-premium-quotes
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: premium_quotes
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: product_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: coverage_package_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: farmer_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: farm_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: crop_id
+                  type: uuid
+              - column:
+                  name: season_id
+                  type: uuid
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints: { nullable: false }
+              - column:
+                  name: base_amount
+                  type: numeric(19,4)
+                  constraints: { nullable: false }
+              - column:
+                  name: gross_amount
+                  type: numeric(19,4)
+                  constraints: { nullable: false }
+              - column:
+                  name: net_amount
+                  type: numeric(19,4)
+                  constraints: { nullable: false }
+              - column:
+                  name: coverage_amount
+                  type: numeric(19,4)
+                  constraints: { nullable: false }
+              - column:
+                  name: breakdown_json
+                  type: text
+                  constraints: { nullable: false }
+              - column:
+                  name: factors_hash
+                  type: varchar(128)
+                  constraints: { nullable: false }
+              - column:
+                  name: expires_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+
+  - changeSet:
+      id: 011-policy-columns
+      author: aegisterra
+      changes:
+        - addColumn:
+            tableName: insurance_policies
+            columns:
+              - column:
+                  name: product_id
+                  type: uuid
+              - column:
+                  name: coverage_package_id
+                  type: uuid
+              - column:
+                  name: crop_season_id
+                  type: uuid
+              - column:
+                  name: crop_id
+                  type: uuid
+              - column:
+                  name: season_id
+                  type: uuid
+              - column:
+                  name: premium_quote_id
+                  type: uuid
+              - column:
+                  name: parent_policy_id
+                  type: uuid
+              - column:
+                  name: transition_reason
+                  type: varchar(1000)
+              - column:
+                  name: coverage_snapshot_json
+                  type: text
+        - addForeignKeyConstraint:
+            constraintName: fk_policies_product
+            baseTableName: insurance_policies
+            baseColumnNames: product_id
+            referencedTableName: insurance_products
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_policies_package
+            baseTableName: insurance_policies
+            baseColumnNames: coverage_package_id
+            referencedTableName: coverage_packages
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_policies_quote
+            baseTableName: insurance_policies
+            baseColumnNames: premium_quote_id
+            referencedTableName: premium_quotes
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_policies_parent
+            baseTableName: insurance_policies
+            baseColumnNames: parent_policy_id
+            referencedTableName: insurance_policies
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_policies_status_dates
+            tableName: insurance_policies
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: start_date
+              - column:
+                  name: end_date
+
+  - changeSet:
+      id: 011-beneficiaries-docs-drafts
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: policy_beneficiaries
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: policy_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: full_name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: relationship
+                  type: varchar(64)
+              - column:
+                  name: national_id
+                  type: varchar(32)
+              - column:
+                  name: share_pct
+                  type: numeric(7,4)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_beneficiaries_policy
+            baseTableName: policy_beneficiaries
+            baseColumnNames: policy_id
+            referencedTableName: insurance_policies
+            referencedColumnNames: id
+        - createTable:
+            tableName: policy_documents
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: policy_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: document_type
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: version_no
+                  type: int
+                  constraints: { nullable: false }
+              - column:
+                  name: template_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: content_text
+                  type: text
+                  constraints: { nullable: false }
+              - column:
+                  name: content_sha256
+                  type: varchar(128)
+                  constraints: { nullable: false }
+              - column:
+                  name: qr_payload
+                  type: varchar(1000)
+              - column:
+                  name: signature_status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: signed_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_policy_documents_policy
+            baseTableName: policy_documents
+            baseColumnNames: policy_id
+            referencedTableName: insurance_policies
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_policy_documents_type_ver ON policy_documents (policy_id, document_type, version_no) WHERE deleted = false;
+        - createTable:
+            tableName: policy_issuance_drafts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: created_by_user_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: policy_id
+                  type: uuid
+              - column:
+                  name: current_step
+                  type: int
+                  constraints: { nullable: false }
+              - column:
+                  name: payload_json
+                  type: text
+                  constraints: { nullable: false }
+              - column:
+                  name: expires_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_policy_drafts_user
+            baseTableName: policy_issuance_drafts
+            baseColumnNames: created_by_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 011-document-templates-config
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO configurations (id, config_key, category, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'insurance.doc.template.POLICY_CERTIFICATE', 'insurance',
+                '{"templateCode":"POLICY_CERTIFICATE_V1","locale":"en","body":"POLICY CERTIFICATE\nPolicy: {{policyNumber}}\nFarmer: {{farmerId}}\nFarm: {{farmId}}\nCoverage: {{coverageAmount}} {{currency}}\nPremium: {{premiumAmount}} {{currency}}\nPeriod: {{startDate}} to {{endDate}}\nQR: {{qrPayload}}\nHash: {{contentSha256}}"}',
+                'Policy certificate text template', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM configurations WHERE config_key = 'insurance.doc.template.POLICY_CERTIFICATE' AND deleted = false);
+              INSERT INTO configurations (id, config_key, category, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'insurance.doc.template.TERMS_AND_CONDITIONS', 'insurance',
+                '{"templateCode":"TERMS_V1","locale":"en","body":"TERMS AND CONDITIONS\nProduct: {{productCode}}\nPackage: {{packageCode}}\nExclusions and waiting periods apply as per coverage snapshot.\n{{coverageSnapshot}}"}',
+                'T&C template', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM configurations WHERE config_key = 'insurance.doc.template.TERMS_AND_CONDITIONS' AND deleted = false);
+              INSERT INTO configurations (id, config_key, category, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'insurance.doc.template.COVERAGE_SUMMARY', 'insurance',
+                '{"templateCode":"COVERAGE_SUMMARY_V1","locale":"en","body":"COVERAGE SUMMARY\nPolicy: {{policyNumber}}\nSum Insured: {{coverageAmount}} {{currency}}\nSnapshot:\n{{coverageSnapshot}}"}',
+                'Coverage summary template', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM configurations WHERE config_key = 'insurance.doc.template.COVERAGE_SUMMARY' AND deleted = false);
+              INSERT INTO configurations (id, config_key, category, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'insurance.premium.quote_ttl_days', 'insurance', '7', 'Premium quote TTL days', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM configurations WHERE config_key = 'insurance.premium.quote_ttl_days' AND deleted = false);
+
+  - changeSet:
+      id: 011-seed-product-catalog
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO insurance_products (id, code, name, description, pricing_strategy_code, eligibility_json, config_json, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001', 'CROP_MULTI_PERIL', 'Crop Multi-Peril', 'National crop multi-peril product',
+                'AREA_MULTIPLIER', '{"requireActiveBoundary":true,"beneficiariesRequired":false}',
+                '{"currency":"RWF","baseRatePerHa":25000}', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM insurance_products WHERE code = 'CROP_MULTI_PERIL' AND deleted = false);
+
+              INSERT INTO policy_types (id, code, name, description, coverage_rules_json, product_id, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002', 'MPCI_STANDARD', 'MPCI Standard', 'Standard multi-peril crop insurance',
+                '{"perils":["DROUGHT","EXCESS_RAIN","HAIL"]}', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM policy_types WHERE code = 'MPCI_STANDARD' AND deleted = false);
+
+              INSERT INTO coverage_packages (id, product_id, policy_type_id, code, name, coverage_level_pct, max_sum_insured, config_json, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002',
+                'PKG_80', '80% Coverage Package', 80.0000, 50000000.0000, '{"sumInsuredPerHa":600000}', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM coverage_packages WHERE code = 'PKG_80' AND deleted = false);
+
+              INSERT INTO coverage_limits (id, coverage_package_id, peril_code, limit_amount, currency, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003', 'DROUGHT', 50000000.0000, 'RWF', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM coverage_limits WHERE coverage_package_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003' AND peril_code = 'DROUGHT' AND deleted = false);
+
+              INSERT INTO policy_exclusions (id, coverage_package_id, code, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003', 'WAR', 'Loss of war and civil unrest', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM policy_exclusions WHERE coverage_package_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003' AND code = 'WAR' AND deleted = false);
+
+              INSERT INTO waiting_periods (id, coverage_package_id, code, days, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003', 'ONSET', 14, 'Waiting period from policy start', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM waiting_periods WHERE coverage_package_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003' AND code = 'ONSET' AND deleted = false);
+
+              INSERT INTO premium_pricing_rules (id, rule_code, product_id, factor_code, priority, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), v.rule_code, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001', v.factor_code, v.priority, v.value_json, v.description, NOW(), NOW(), 0, 'ACTIVE', false
+              FROM (VALUES
+                ('CMP_BASE', 'INSURANCE_PRODUCT', 10, '{"baseRatePerHa":25000}', 'Base product rate per hectare'),
+                ('CMP_CROP', 'CROP_TYPE', 20, '{"defaultMultiplier":1.0,"byCropCode":{"MAIZE":1.1,"BEANS":1.0,"RICE":1.2,"POTATO":1.15,"CASSAVA":0.95}}', 'Crop type multipliers'),
+                ('CMP_AREA', 'FARM_AREA', 30, '{"mode":"PER_HA"}', 'Scale by farm area'),
+                ('CMP_RISK', 'RISK_ZONE', 40, '{"defaultMultiplier":1.0,"byZone":{"LOW":0.9,"MEDIUM":1.0,"HIGH":1.25}}', 'Risk zone multipliers'),
+                ('CMP_WEATHER', 'HISTORICAL_WEATHER', 50, '{"defaultMultiplier":1.0}', 'Historical weather loading'),
+                ('CMP_COV', 'COVERAGE_LEVEL', 60, '{"mode":"PCT_OF_PACKAGE"}', 'Coverage level scaling'),
+                ('CMP_SUB', 'GOVERNMENT_SUBSIDY', 70, '{"rate":0.40}', '40% government subsidy'),
+                ('CMP_DISC', 'DISCOUNT_RULES', 80, '{"maxRate":0.10,"defaultRate":0.0}', 'Discount cap'),
+                ('CMP_PARTNER', 'PARTNER_AGREEMENTS', 90, '{"defaultMultiplier":1.0}', 'Partner agreement multiplier'),
+                ('CMP_TAX', 'TAXES', 100, '{"rate":0.18}', 'VAT 18%')
+              ) AS v(rule_code, factor_code, priority, value_json, description)
+              WHERE NOT EXISTS (SELECT 1 FROM premium_pricing_rules r WHERE r.rule_code = v.rule_code AND r.deleted = false);
+
+  - changeSet:
+      id: 011-policies-approve-permission
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220030', 'policies:approve', 'Approve policies', 'policies', 'approve', 'Approve underwriting decisions', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'policies:approve' AND deleted = false);
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111001', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code = 'policies:approve' AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111001' AND rp.permission_id = p.id AND rp.deleted = false
+                );

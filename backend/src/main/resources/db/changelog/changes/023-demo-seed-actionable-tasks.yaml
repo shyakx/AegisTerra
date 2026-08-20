@@ -1,0 +1,194 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-demo-seed-actionable-tasks
+      author: aegisterra
+      comment: >
+        Seed 1–2 OPEN demo inbox tasks (PENDING + SYSTEM_ADMIN role pool) so the bootstrap
+        admin can see and act on them via existing My Tasks APIs. Claim validation uses the
+        existing ACTIVE claim workflow instance; settlement finance review uses SETTLEMENT_STANDARD.
+      changes:
+        - sql:
+            sql: |
+              -- Align claim CLM-RC1-2026-002 workflow to VALIDATION and link the claim aggregate.
+              UPDATE workflow_instances wi
+              SET current_step_code = 'VALIDATION',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc102'::uuid
+                AND wi.subject_type = 'CLAIM'
+                AND wi.subject_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702'::uuid
+                AND wi.status = 'ACTIVE'
+                AND wi.deleted = false
+                AND wi.current_step_code <> 'VALIDATION';
+
+              UPDATE claims c
+              SET workflow_instance_id = 'cccccccc-cccc-cccc-cccc-ccccccccc102'::uuid,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE c.id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702'::uuid
+                AND c.deleted = false
+                AND (c.workflow_instance_id IS NULL
+                     OR c.workflow_instance_id <> 'cccccccc-cccc-cccc-cccc-ccccccccc102'::uuid);
+
+              -- 1) Open claim validation task (role pool → visible in /tasks/my for SYSTEM_ADMIN).
+              INSERT INTO workflow_tasks (
+                id, instance_id, workflow_step_id, step_code, task_type, title, description,
+                subject_type, subject_id, assignee_user_id, assignee_role_code, priority, due_at,
+                payload_json, outcome, completed_at, completed_by, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT
+                'dddddddd-dddd-dddd-dddd-ddddddddd023'::uuid,
+                'cccccccc-cccc-cccc-cccc-ccccccccc102'::uuid,
+                NULL,
+                'VALIDATION',
+                'VERIFICATION',
+                'Validate claim intake',
+                'Re-validate flood claim CLM-RC1-2026-002 after returned evidence checklist.',
+                'CLAIM',
+                'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702'::uuid,
+                NULL,
+                'SYSTEM_ADMIN',
+                100,
+                CURRENT_TIMESTAMP + INTERVAL '2 days',
+                '{"claimNumber":"CLM-RC1-2026-002","demo":"023-actionable"}',
+                NULL,
+                NULL,
+                NULL,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP,
+                NULL,
+                NULL,
+                0,
+                'PENDING',
+                FALSE
+              WHERE EXISTS (
+                SELECT 1 FROM workflow_instances wi
+                WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc102'::uuid
+                  AND wi.deleted = false
+                  AND wi.status = 'ACTIVE'
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM workflow_tasks wt
+                WHERE wt.id = 'dddddddd-dddd-dddd-dddd-ddddddddd023'::uuid
+              );
+
+              -- 2) Settlement finance-review workflow + open task for pending SET-RC1-2026-002.
+              INSERT INTO workflow_instances (
+                id, definition_id, definition_version_id, subject_type, subject_id, current_step_code,
+                correlation_id, payload_json, started_at, completed_at, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT
+                'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid,
+                'eeeeeeee-eeee-eeee-eeee-eeeeeeeee001'::uuid,
+                'eeeeeeee-eeee-eeee-eeee-eeeeeeeee011'::uuid,
+                'SETTLEMENT',
+                s.id,
+                'FINANCE_REVIEW',
+                'demo-settlement-802',
+                '{"settlementNumber":"SET-RC1-2026-002"}',
+                CURRENT_TIMESTAMP - INTERVAL '1 day',
+                NULL,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP,
+                NULL,
+                NULL,
+                0,
+                'ACTIVE',
+                FALSE
+              FROM settlements s
+              WHERE s.settlement_number = 'SET-RC1-2026-002'
+                AND s.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM workflow_instances wi
+                  WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid
+                     OR (wi.subject_type = 'SETTLEMENT' AND wi.subject_id = s.id AND wi.deleted = false)
+                );
+
+              UPDATE settlements s
+              SET workflow_instance_id = 'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE s.settlement_number = 'SET-RC1-2026-002'
+                AND s.deleted = false
+                AND EXISTS (
+                  SELECT 1 FROM workflow_instances wi
+                  WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid
+                    AND wi.deleted = false
+                )
+                AND (s.workflow_instance_id IS NULL
+                     OR s.workflow_instance_id <> 'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid);
+
+              INSERT INTO settlement_workflow_links (
+                id, settlement_id, workflow_instance_id, workflow_definition_code, link_role,
+                created_at, updated_at, created_by, updated_by, version, status, deleted
+              )
+              SELECT
+                'ffffffff-ffff-ffff-ffff-ffffffffff21'::uuid,
+                s.id,
+                'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid,
+                'SETTLEMENT_STANDARD',
+                'PRIMARY',
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP,
+                NULL,
+                NULL,
+                0,
+                'ACTIVE',
+                FALSE
+              FROM settlements s
+              WHERE s.settlement_number = 'SET-RC1-2026-002'
+                AND s.deleted = false
+                AND EXISTS (
+                  SELECT 1 FROM workflow_instances wi
+                  WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid
+                    AND wi.deleted = false
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM settlement_workflow_links l
+                  WHERE l.id = 'ffffffff-ffff-ffff-ffff-ffffffffff21'::uuid
+                     OR (l.settlement_id = s.id AND l.deleted = false)
+                );
+
+              INSERT INTO workflow_tasks (
+                id, instance_id, workflow_step_id, step_code, task_type, title, description,
+                subject_type, subject_id, assignee_user_id, assignee_role_code, priority, due_at,
+                payload_json, outcome, completed_at, completed_by, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT
+                'dddddddd-dddd-dddd-dddd-ddddddddd024'::uuid,
+                'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid,
+                NULL,
+                'FINANCE_REVIEW',
+                'VERIFICATION',
+                'Review settlement request',
+                'Finance review for pending settlement SET-RC1-2026-002 before approval/disbursement.',
+                'SETTLEMENT',
+                s.id,
+                NULL,
+                'SYSTEM_ADMIN',
+                90,
+                CURRENT_TIMESTAMP + INTERVAL '1 day',
+                '{"settlementNumber":"SET-RC1-2026-002","demo":"023-actionable"}',
+                NULL,
+                NULL,
+                NULL,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP,
+                NULL,
+                NULL,
+                0,
+                'PENDING',
+                FALSE
+              FROM settlements s
+              WHERE s.settlement_number = 'SET-RC1-2026-002'
+                AND s.deleted = false
+                AND EXISTS (
+                  SELECT 1 FROM workflow_instances wi
+                  WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc201'::uuid
+                    AND wi.deleted = false
+                    AND wi.status = 'ACTIVE'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM workflow_tasks wt
+                  WHERE wt.id = 'dddddddd-dddd-dddd-dddd-ddddddddd024'::uuid
+                );

@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: 030-demo-hero-claim-workflow-links
+      author: aegisterra
+      comment: >
+        G4 demo fix — attach existing CLAIM_STANDARD workflow instances to showcase claims
+        CLM-RC1-2026-001 and CLM-RC1-2026-003, and seed matching workflow_events so claim
+        details can continue into the workflow / task / decision story.
+      changes:
+        - sql:
+            sql: |
+              -- CLM-RC1-2026-001 → completed instance c101
+              UPDATE claims c
+              SET workflow_instance_id = 'cccccccc-cccc-cccc-cccc-ccccccccc101'::uuid,
+                  workflow_definition_code = 'CLAIM_STANDARD',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE c.id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701'::uuid
+                AND c.deleted = false
+                AND EXISTS (
+                  SELECT 1 FROM workflow_instances wi
+                  WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc101'::uuid
+                    AND wi.subject_id = c.id
+                    AND wi.deleted = false
+                )
+                AND (c.workflow_instance_id IS NULL
+                     OR c.workflow_instance_id <> 'cccccccc-cccc-cccc-cccc-ccccccccc101'::uuid
+                     OR c.workflow_definition_code IS DISTINCT FROM 'CLAIM_STANDARD');
+
+              -- CLM-RC1-2026-003 → completed instance c103
+              UPDATE claims c
+              SET workflow_instance_id = 'cccccccc-cccc-cccc-cccc-ccccccccc103'::uuid,
+                  workflow_definition_code = 'CLAIM_STANDARD',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE c.id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703'::uuid
+                AND c.deleted = false
+                AND EXISTS (
+                  SELECT 1 FROM workflow_instances wi
+                  WHERE wi.id = 'cccccccc-cccc-cccc-cccc-ccccccccc103'::uuid
+                    AND wi.subject_id = c.id
+                    AND wi.deleted = false
+                )
+                AND (c.workflow_instance_id IS NULL
+                     OR c.workflow_instance_id <> 'cccccccc-cccc-cccc-cccc-ccccccccc103'::uuid
+                     OR c.workflow_definition_code IS DISTINCT FROM 'CLAIM_STANDARD');
+
+              INSERT INTO workflow_events (
+                id, instance_id, event_type, from_step_code, to_step_code, action_code,
+                actor_id, message, payload_json, occurred_at, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT v.id::uuid, v.instance_id::uuid, v.event_type, v.from_step, v.to_step, v.action_code,
+                     NULL, v.message, NULL, v.occurred_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+                     NULL, NULL, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae101', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'CREATED', NULL, 'VALIDATION', NULL, 'Claim workflow opened for CLM-RC1-2026-001.', CURRENT_TIMESTAMP - INTERVAL '4 days'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae102', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'STARTED', NULL, 'VALIDATION', NULL, 'Validation started for drought claim intake.', CURRENT_TIMESTAMP - INTERVAL '4 days' + INTERVAL '1 minute'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae103', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'DECISION', 'VALIDATION', 'INSPECTION', 'APPROVE', 'Drought evidence meets the required threshold for approval.', CURRENT_TIMESTAMP - INTERVAL '3 days'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae104', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'TRANSITIONED', 'VALIDATION', 'INSPECTION', 'APPROVE', 'Advanced to field inspection.', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '1 minute'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae105', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'DECISION', 'INSPECTION', 'ASSESSMENT', 'APPROVE', 'Site inspection confirmed crop damage and extent.', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae106', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'TRANSITIONED', 'INSPECTION', 'ASSESSMENT', 'APPROVE', 'Advanced to indemnity assessment.', CURRENT_TIMESTAMP - INTERVAL '2 days' + INTERVAL '1 minute'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae107', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'TRANSITIONED', 'ASSESSMENT', 'DONE_APPROVED', 'APPROVE', 'Drought claim approved after validated field evidence.', CURRENT_TIMESTAMP - INTERVAL '2 days' + INTERVAL '5 minutes'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae108', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'COMPLETED', 'ASSESSMENT', 'DONE_APPROVED', NULL, 'Claim workflow completed.', CURRENT_TIMESTAMP - INTERVAL '2 days' + INTERVAL '6 minutes'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae201', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'CREATED', NULL, 'VALIDATION', NULL, 'Claim workflow opened for CLM-RC1-2026-003.', CURRENT_TIMESTAMP - INTERVAL '6 days'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae202', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'STARTED', NULL, 'VALIDATION', NULL, 'Validation started for flood claim packet.', CURRENT_TIMESTAMP - INTERVAL '6 days' + INTERVAL '1 minute'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae203', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'DECISION', 'VALIDATION', 'DECISION', 'APPROVE', 'Review flood claim packet before approval.', CURRENT_TIMESTAMP - INTERVAL '5 days'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae204', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'TRANSITIONED', 'VALIDATION', 'DECISION', 'APPROVE', 'Advanced to adjudication.', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '1 minute'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae205', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'DECISION', 'DECISION', 'DONE_APPROVED', 'APPROVE', 'Final adjudication approved the indemnity payment.', CURRENT_TIMESTAMP - INTERVAL '1 day'),
+                ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaae206', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'COMPLETED', 'DECISION', 'DONE_APPROVED', NULL, 'Claim workflow completed.', CURRENT_TIMESTAMP - INTERVAL '1 day' + INTERVAL '1 minute')
+              ) AS v(id, instance_id, event_type, from_step, to_step, action_code, message, occurred_at)
+              WHERE NOT EXISTS (SELECT 1 FROM workflow_events e WHERE e.id = v.id::uuid);

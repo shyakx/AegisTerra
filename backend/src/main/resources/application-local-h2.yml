@@ -1,0 +1,20 @@
+# Optional IAM-only profile without PostGIS (not for Phase 3 spatial work).
+# Activate with: --spring.profiles.active=local-h2
+spring:
+  datasource:
+    url: jdbc:h2:mem:aegisterra;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  liquibase:
+    contexts: h2
+  autoconfigure:
+    exclude: []
+
+aegisterra:
+  security:
+    bootstrap:
+      enabled: true
+      admin-password: ${AEGISTERRA_BOOTSTRAP_ADMIN_PASSWORD:Admin@1234!Aa}
+      demo-users-enabled: true
+      demo-users-password: ${AEGISTERRA_DEMO_USERS_PASSWORD:Demo@1234!Aa}

@@ -1,0 +1,123 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-demo-role-permissions
+      author: aegisterra
+      comment: >
+        Demo-usable RBAC grants so every system role can open relevant portal areas.
+        Idempotent; does not invent new permissions.
+      changes:
+        - sql:
+            sql: |
+              -- INSURANCE_ADMIN: full insurance + registry operations
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111002', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN (
+                  'farmers:read','farmers:write','farms:read','farms:write',
+                  'policies:read','policies:write','policies:approve',
+                  'claims:read','claims:write','claims:assess','claims:decide','claims:admin',
+                  'tasks:read','tasks:act','tasks:assign','decisions:read','decisions:act',
+                  'notifications:read','notifications:write','workflows:read'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111002'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+              -- INSURANCE_OFFICER: claims ops + supporting reads
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111003', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN (
+                  'farmers:read','farms:read','policies:read',
+                  'tasks:read','tasks:act','decisions:read','decisions:act',
+                  'notifications:read'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111003'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+              -- FI_OFFICER: settlements + supporting reads
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111004', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN (
+                  'farmers:read','farms:read','policies:read','claims:read',
+                  'tasks:read','tasks:act','decisions:read','decisions:act',
+                  'notifications:read'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111004'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+              -- GOVERNMENT_ANALYST: national read posture
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111005', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN (
+                  'farmers:read','farms:read','policies:read','claims:read',
+                  'settlements:read','ledger:read','reports:settlements',
+                  'reports:climate','reports:climate-intel','notifications:read'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111005'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+              -- AGGREGATOR: farmer/farm onboarding
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111006', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN ('farmers:read','farmers:write','farms:read','farms:write','notifications:read')
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111006'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+              -- FARMER: self-service reads
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111007', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN ('farmers:read','farms:read','policies:read','claims:read','notifications:read')
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111007'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+              -- AUDITOR: remaining read surfaces
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111008', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN ('tasks:read','decisions:read','notifications:read','farms:read')
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111008'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+              -- SUPPORT: limited assistance
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111009', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN ('users:read','roles:read','farmers:read','farms:read','notifications:read')
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111009'
+                    AND rp.permission_id = p.id AND rp.deleted = false
+                );

@@ -1,0 +1,448 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-decision-types
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: decision_types
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: requires_comment
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+              - column:
+                  name: requires_target_user
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+              - column:
+                  name: sort_order
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - createIndex:
+            indexName: idx_decision_types_code
+            tableName: decision_types
+            columns:
+              - column: { name: code }
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uq_decision_types_code_active
+              ON decision_types (code)
+              WHERE deleted = false;
+
+  - changeSet:
+      id: 014-decision-outcomes
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: decision_outcomes
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - createIndex:
+            indexName: idx_decision_outcomes_code
+            tableName: decision_outcomes
+            columns:
+              - column: { name: code }
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uq_decision_outcomes_code_active
+              ON decision_outcomes (code)
+              WHERE deleted = false;
+
+  - changeSet:
+      id: 014-decision-rules
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: decision_rules
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: decision_type_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: outcome_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: effect
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: workflow_action
+                  type: varchar(64)
+              - column:
+                  name: workflow_definition_code
+                  type: varchar(64)
+              - column:
+                  name: step_code
+                  type: varchar(64)
+              - column:
+                  name: task_type
+                  type: varchar(32)
+              - column:
+                  name: priority
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - createIndex:
+            indexName: idx_decision_rules_type
+            tableName: decision_rules
+            columns:
+              - column: { name: decision_type_code }
+              - column: { name: status }
+        - createIndex:
+            indexName: idx_decision_rules_scope
+            tableName: decision_rules
+            columns:
+              - column: { name: workflow_definition_code }
+              - column: { name: step_code }
+              - column: { name: task_type }
+
+  - changeSet:
+      id: 014-workflow-decisions
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: workflow_decisions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: instance_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: step_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: decision_type_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: outcome_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: effect
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: workflow_action
+                  type: varchar(64)
+              - column:
+                  name: comment_text
+                  type: varchar(4000)
+              - column:
+                  name: target_user_id
+                  type: uuid
+              - column:
+                  name: subject_type
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: subject_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: decided_by
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: decided_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_decisions_task
+            baseTableName: workflow_decisions
+            baseColumnNames: task_id
+            referencedTableName: workflow_tasks
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_decisions_instance
+            baseTableName: workflow_decisions
+            baseColumnNames: instance_id
+            referencedTableName: workflow_instances
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_workflow_decisions_task
+            tableName: workflow_decisions
+            columns:
+              - column: { name: task_id }
+              - column: { name: decided_at }
+        - createIndex:
+            indexName: idx_workflow_decisions_instance
+            tableName: workflow_decisions
+            columns:
+              - column: { name: instance_id }
+
+  - changeSet:
+      id: 014-decision-catalog-seed
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330001', 'APPROVE', 'Approve', 'Approve and advance when a matching transition exists', FALSE, FALSE, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'APPROVE' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330002', 'REJECT', 'Reject', 'Reject and advance when a matching transition exists', TRUE, FALSE, 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'REJECT' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330003', 'RETURN', 'Return', 'Return to a prior step via workflow action RETURN', TRUE, FALSE, 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'RETURN' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330004', 'REQUEST_INFORMATION', 'Request information', 'Request more information via workflow routing', TRUE, FALSE, 40, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'REQUEST_INFORMATION' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330005', 'ESCALATE', 'Escalate', 'Escalate via workflow action ESCALATE when defined', TRUE, FALSE, 50, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'ESCALATE' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330006', 'DELEGATE', 'Delegate', 'Reassign the open task to another user', TRUE, TRUE, 60, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'DELEGATE' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330007', 'AUTO_APPROVE', 'Auto approve', 'System-oriented approve decision', FALSE, FALSE, 70, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'AUTO_APPROVE' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330008', 'AUTO_REJECT', 'Auto reject', 'System-oriented reject decision', FALSE, FALSE, 80, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'AUTO_REJECT' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333330009', 'SKIP', 'Skip', 'Skip step when SKIP transition exists', FALSE, FALSE, 90, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'SKIP' AND deleted = false);
+              INSERT INTO decision_types (id, code, name, description, requires_comment, requires_target_user, sort_order, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-33333333000a', 'CANCEL', 'Cancel', 'Cancel the task (and optionally advance via CANCEL)', TRUE, FALSE, 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_types WHERE code = 'CANCEL' AND deleted = false);
+
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331001', 'APPROVED', 'Approved', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'APPROVED' AND deleted = false);
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331002', 'REJECTED', 'Rejected', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'REJECTED' AND deleted = false);
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331003', 'RETURNED', 'Returned', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'RETURNED' AND deleted = false);
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331004', 'INFORMATION_REQUESTED', 'Information requested', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'INFORMATION_REQUESTED' AND deleted = false);
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331005', 'ESCALATED', 'Escalated', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'ESCALATED' AND deleted = false);
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331006', 'DELEGATED', 'Delegated', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'DELEGATED' AND deleted = false);
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331007', 'SKIPPED', 'Skipped', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'SKIPPED' AND deleted = false);
+              INSERT INTO decision_outcomes (id, code, name, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333331008', 'CANCELLED', 'Cancelled', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_outcomes WHERE code = 'CANCELLED' AND deleted = false);
+
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332001', 'APPROVE', 'APPROVED', 'COMPLETE_AND_ADVANCE', 'APPROVE', NULL, NULL, NULL, 0, 'Global approve', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332001');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332002', 'REJECT', 'REJECTED', 'REJECT_AND_ADVANCE', 'REJECT', NULL, NULL, NULL, 0, 'Global reject', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332002');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332003', 'RETURN', 'RETURNED', 'COMPLETE_AND_ADVANCE', 'RETURN', NULL, NULL, NULL, 0, 'Global return', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332003');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332004', 'REQUEST_INFORMATION', 'INFORMATION_REQUESTED', 'COMPLETE_AND_ADVANCE', 'REQUEST_INFORMATION', NULL, NULL, NULL, 0, 'Global request information', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332004');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332005', 'ESCALATE', 'ESCALATED', 'COMPLETE_AND_ADVANCE', 'ESCALATE', NULL, NULL, NULL, 0, 'Global escalate via graph', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332005');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332006', 'DELEGATE', 'DELEGATED', 'REASSIGN', NULL, NULL, NULL, NULL, 0, 'Global delegate/reassign', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332006');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332007', 'AUTO_APPROVE', 'APPROVED', 'COMPLETE_AND_ADVANCE', 'APPROVE', NULL, NULL, NULL, 0, 'Global auto-approve maps to APPROVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332007');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332008', 'AUTO_REJECT', 'REJECTED', 'REJECT_AND_ADVANCE', 'REJECT', NULL, NULL, NULL, 0, 'Global auto-reject maps to REJECT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332008');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-333333332009', 'SKIP', 'SKIPPED', 'COMPLETE_AND_ADVANCE', 'SKIP', NULL, NULL, NULL, 0, 'Global skip', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-333333332009');
+              INSERT INTO decision_rules (id, decision_type_code, outcome_code, effect, workflow_action, workflow_definition_code, step_code, task_type, priority, description, created_at, updated_at, version, status, deleted)
+              SELECT '33333333-3333-3333-3333-33333333200a', 'CANCEL', 'CANCELLED', 'CANCEL_TASK', NULL, NULL, NULL, NULL, 0, 'Global cancel task', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM decision_rules WHERE id = '33333333-3333-3333-3333-33333333200a');
+
+  - changeSet:
+      id: 014-decision-permissions
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220060', 'decisions:read', 'Read decisions', 'decisions', 'read', 'View decision types and history', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'decisions:read' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220061', 'decisions:act', 'Record decisions', 'decisions', 'act', 'Submit decisions on tasks', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'decisions:act' AND deleted = false);
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111001', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('decisions:read', 'decisions:act') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111001' AND rp.permission_id = p.id AND rp.deleted = false
+                );

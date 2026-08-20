@@ -1,0 +1,783 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-policy-types
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: policy_types
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(1000)
+              - column:
+                  name: coverage_rules_json
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_policy_types_code_active ON policy_types (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 007-insurance-policies
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: insurance_policies
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: policy_number
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: farmer_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: farm_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: insurance_company_id
+                  type: uuid
+              - column:
+                  name: coverage_amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: premium_amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issued_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_insurance_policies_farmer
+            baseTableName: insurance_policies
+            baseColumnNames: farmer_id
+            referencedTableName: farmers
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_insurance_policies_farm
+            baseTableName: insurance_policies
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_insurance_policies_policy_type
+            baseTableName: insurance_policies
+            baseColumnNames: policy_type_id
+            referencedTableName: policy_types
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_insurance_policies_company
+            baseTableName: insurance_policies
+            baseColumnNames: insurance_company_id
+            referencedTableName: insurance_companies
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_insurance_policies_farmer_status
+            tableName: insurance_policies
+            columns:
+              - column:
+                  name: farmer_id
+              - column:
+                  name: status
+        - createIndex:
+            indexName: idx_insurance_policies_farm_id
+            tableName: insurance_policies
+            columns:
+              - column:
+                  name: farm_id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_insurance_policies_number_active ON insurance_policies (policy_number) WHERE deleted = false;
+
+  - changeSet:
+      id: 007-premiums
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: premiums
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: policy_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: paid_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_premiums_policy
+            baseTableName: premiums
+            baseColumnNames: policy_id
+            referencedTableName: insurance_policies
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_premiums_policy_status
+            tableName: premiums
+            columns:
+              - column:
+                  name: policy_id
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 007-claims
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: claims
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: claim_number
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: claimed_amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: incident_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_claims_policy
+            baseTableName: claims
+            baseColumnNames: policy_id
+            referencedTableName: insurance_policies
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_claims_policy_status
+            tableName: claims
+            columns:
+              - column:
+                  name: policy_id
+              - column:
+                  name: status
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_claims_number_active ON claims (claim_number) WHERE deleted = false;
+
+  - changeSet:
+      id: 007-claim-assessments
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: claim_assessments
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: claim_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assessor_user_id
+                  type: uuid
+              - column:
+                  name: assessed_amount
+                  type: numeric(19,4)
+              - column:
+                  name: notes
+                  type: varchar(2000)
+              - column:
+                  name: assessed_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_claim_assessments_claim
+            baseTableName: claim_assessments
+            baseColumnNames: claim_id
+            referencedTableName: claims
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_claim_assessments_assessor
+            baseTableName: claim_assessments
+            baseColumnNames: assessor_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_claim_assessments_claim_id
+            tableName: claim_assessments
+            columns:
+              - column:
+                  name: claim_id
+
+  - changeSet:
+      id: 007-payouts
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: payouts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: claim_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: financial_institution_id
+                  type: uuid
+              - column:
+                  name: amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: disbursed_at
+                  type: timestamptz
+              - column:
+                  name: reference_number
+                  type: varchar(100)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_payouts_claim
+            baseTableName: payouts
+            baseColumnNames: claim_id
+            referencedTableName: claims
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_payouts_fi
+            baseTableName: payouts
+            baseColumnNames: financial_institution_id
+            referencedTableName: financial_institutions
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_payouts_claim_id
+            tableName: payouts
+            columns:
+              - column:
+                  name: claim_id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_payouts_claim_active ON payouts (claim_id) WHERE deleted = false;
+
+  - changeSet:
+      id: 007-insurance-policies-history
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: insurance_policies_history
+            columns:
+              - column:
+                  name: history_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: original_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_number
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: farmer_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: farm_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_type_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: insurance_company_id
+                  type: uuid
+              - column:
+                  name: coverage_amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: premium_amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: issued_at
+                  type: timestamptz
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_by
+                  type: uuid
+              - column:
+                  name: change_reason
+                  type: varchar(500)
+        - createIndex:
+            indexName: idx_insurance_policies_history_original
+            tableName: insurance_policies_history
+            columns:
+              - column:
+                  name: original_id
+              - column:
+                  name: changed_at
+
+  - changeSet:
+      id: 007-claims-history
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: claims_history
+            columns:
+              - column:
+                  name: history_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: original_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: claim_number
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: policy_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: claimed_amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: incident_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_by
+                  type: uuid
+              - column:
+                  name: change_reason
+                  type: varchar(500)
+        - createIndex:
+            indexName: idx_claims_history_original
+            tableName: claims_history
+            columns:
+              - column:
+                  name: original_id
+              - column:
+                  name: changed_at
+
+  - changeSet:
+      id: 007-payouts-history
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: payouts_history
+            columns:
+              - column:
+                  name: history_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: original_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: claim_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: financial_institution_id
+                  type: uuid
+              - column:
+                  name: amount
+                  type: numeric(19,4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: disbursed_at
+                  type: timestamptz
+              - column:
+                  name: reference_number
+                  type: varchar(100)
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_by
+                  type: uuid
+              - column:
+                  name: change_reason
+                  type: varchar(500)
+        - createIndex:
+            indexName: idx_payouts_history_original
+            tableName: payouts_history
+            columns:
+              - column:
+                  name: original_id
+              - column:
+                  name: changed_at

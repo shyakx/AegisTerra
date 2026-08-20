@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${AEGISTERRA_DB_URL}
+    username: ${AEGISTERRA_DB_USER}
+    password: ${AEGISTERRA_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+aegisterra:
+  security:
+    bootstrap:
+      enabled: false
+    cookie:
+      secure: true
+      same-site: Strict
+    jwt:
+      secret: ${AEGISTERRA_JWT_SECRET}
+
+springdoc:
+  swagger-ui:
+    enabled: false

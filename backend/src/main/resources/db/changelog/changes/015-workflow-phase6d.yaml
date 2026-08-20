@@ -1,0 +1,335 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-notifications-extend
+      author: aegisterra
+      changes:
+        - addColumn:
+            tableName: notifications
+            columns:
+              - column:
+                  name: event_id
+                  type: uuid
+              - column:
+                  name: event_type
+                  type: varchar(64)
+              - column:
+                  name: subject_type
+                  type: varchar(64)
+              - column:
+                  name: subject_id
+                  type: uuid
+              - column:
+                  name: correlation_id
+                  type: varchar(128)
+              - column:
+                  name: template_code
+                  type: varchar(128)
+              - column:
+                  name: payload_json
+                  type: text
+        - createIndex:
+            indexName: idx_notifications_user_read
+            tableName: notifications
+            columns:
+              - column: { name: user_id }
+              - column: { name: read_at }
+        - createIndex:
+            indexName: idx_notifications_event
+            tableName: notifications
+            columns:
+              - column: { name: event_id }
+
+  - changeSet:
+      id: 015-notification-templates
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: notification_templates
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: code
+                  type: varchar(128)
+                  constraints: { nullable: false }
+              - column:
+                  name: channel
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: locale
+                  type: varchar(16)
+                  defaultValue: en
+                  constraints: { nullable: false }
+              - column:
+                  name: title_template
+                  type: varchar(500)
+                  constraints: { nullable: false }
+              - column:
+                  name: body_template
+                  type: varchar(4000)
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - createIndex:
+            indexName: idx_notification_templates_code
+            tableName: notification_templates
+            columns:
+              - column: { name: code }
+              - column: { name: channel }
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uq_notification_templates_code_channel_locale
+              ON notification_templates (code, channel, locale)
+              WHERE deleted = false;
+
+  - changeSet:
+      id: 015-notification-preferences
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: notification_preferences
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: channel
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: enabled
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_notification_preferences_user
+            baseTableName: notification_preferences
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_notification_preferences_user
+            tableName: notification_preferences
+            columns:
+              - column: { name: user_id }
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uq_notification_preferences_user_channel_event
+              ON notification_preferences (user_id, channel, event_type)
+              WHERE deleted = false;
+
+  - changeSet:
+      id: 015-notification-delivery-log
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: notification_delivery_log
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: notification_id
+                  type: uuid
+              - column:
+                  name: event_id
+                  type: uuid
+              - column:
+                  name: channel
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: attempt_no
+                  type: int
+                  defaultValueNumeric: 1
+                  constraints: { nullable: false }
+              - column:
+                  name: delivery_status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: provider
+                  type: varchar(64)
+              - column:
+                  name: error_message
+                  type: varchar(2000)
+              - column:
+                  name: attempted_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - createIndex:
+            indexName: idx_notification_delivery_event
+            tableName: notification_delivery_log
+            columns:
+              - column: { name: event_id }
+        - createIndex:
+            indexName: idx_notification_delivery_notification
+            tableName: notification_delivery_log
+            columns:
+              - column: { name: notification_id }
+
+  - changeSet:
+      id: 015-notification-template-seed
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440001', 'WorkflowStarted', 'IN_APP', 'en',
+                     'Workflow started', 'Workflow for {{subjectType}} {{subjectId}} started at step {{stepCode}}.',
+                     'Workflow started', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'WorkflowStarted' AND channel = 'IN_APP' AND deleted = false);
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440002', 'WorkflowCompleted', 'IN_APP', 'en',
+                     'Workflow completed', 'Workflow {{instanceId}} completed successfully.',
+                     'Workflow completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'WorkflowCompleted' AND channel = 'IN_APP' AND deleted = false);
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440003', 'WorkflowCancelled', 'IN_APP', 'en',
+                     'Workflow cancelled', 'Workflow {{instanceId}} ended with status {{terminalStatus}}.',
+                     'Workflow cancelled/rejected', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'WorkflowCancelled' AND channel = 'IN_APP' AND deleted = false);
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440004', 'TaskCreated', 'IN_APP', 'en',
+                     'New task: {{title}}', 'A task was created on step {{stepCode}} for {{subjectType}}.',
+                     'Task created', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'TaskCreated' AND channel = 'IN_APP' AND deleted = false);
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440005', 'TaskAssigned', 'IN_APP', 'en',
+                     'Task assigned: {{title}}', 'You were assigned task {{taskId}} ({{title}}).',
+                     'Task assigned', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'TaskAssigned' AND channel = 'IN_APP' AND deleted = false);
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440006', 'TaskClaimed', 'IN_APP', 'en',
+                     'Task claimed', 'Task {{taskId}} was claimed.',
+                     'Task claimed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'TaskClaimed' AND channel = 'IN_APP' AND deleted = false);
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440007', 'TaskCompleted', 'IN_APP', 'en',
+                     'Task completed', 'Task {{taskId}} completed with outcome {{outcome}}.',
+                     'Task completed', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'TaskCompleted' AND channel = 'IN_APP' AND deleted = false);
+              INSERT INTO notification_templates (id, code, channel, locale, title_template, body_template, description, created_at, updated_at, version, status, deleted)
+              SELECT '44444444-4444-4444-4444-444444440008', 'DecisionRecorded', 'IN_APP', 'en',
+                     'Decision recorded', 'Decision {{decisionType}} → {{outcome}} on task {{taskId}}.',
+                     'Decision recorded', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM notification_templates WHERE code = 'DecisionRecorded' AND channel = 'IN_APP' AND deleted = false);
+
+  - changeSet:
+      id: 015-notification-permissions
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220070', 'notifications:read', 'Read notifications', 'notifications', 'read', 'View notification center', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'notifications:read' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220071', 'notifications:write', 'Manage notifications', 'notifications', 'write', 'Mark read and update preferences', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'notifications:write' AND deleted = false);
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111001', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('notifications:read', 'notifications:write') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111001' AND rp.permission_id = p.id AND rp.deleted = false
+                );

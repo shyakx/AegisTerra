@@ -1,0 +1,72 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027-demo-role-page-access
+      author: aegisterra
+      comment: >
+        Restore/ensure module permissions for role-specific portal pages.
+        Uses UPDATE undelete first because uk_role_permissions is on (role_id, permission_id).
+      changes:
+        - sql:
+            sql: |
+              -- Undelete any soft-revoked FARMER grants needed for subject-scoped portal
+              UPDATE role_permissions rp
+              SET deleted = FALSE, updated_at = CURRENT_TIMESTAMP, status = 'ACTIVE'
+              FROM permissions p
+              WHERE rp.permission_id = p.id
+                AND rp.role_id = '11111111-1111-1111-1111-111111111007'
+                AND rp.deleted = TRUE
+                AND p.code IN (
+                  'farmers:read','farms:read','policies:read','claims:read','claims:write',
+                  'notifications:read','notifications:write'
+                );
+
+              -- Insert only when no row exists at all (active or deleted)
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111007', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN (
+                  'farmers:read','farms:read','policies:read','claims:read','claims:write',
+                  'notifications:read','notifications:write'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions x
+                  WHERE x.role_id = '11111111-1111-1111-1111-111111111007'
+                    AND x.permission_id = p.id
+                );
+
+              -- SUPPORT lookup pages
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111009', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN ('policies:read','claims:read','notifications:write')
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions x
+                  WHERE x.role_id = '11111111-1111-1111-1111-111111111009'
+                    AND x.permission_id = p.id
+                );
+
+              -- AGGREGATOR policy + task visibility
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111006', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN ('policies:read','tasks:read')
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions x
+                  WHERE x.role_id = '11111111-1111-1111-1111-111111111006'
+                    AND x.permission_id = p.id
+                );
+
+              -- INSURANCE_ADMIN climate visibility
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111002', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false
+                AND p.code IN ('climate:read','climate-intel:read')
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions x
+                  WHERE x.role_id = '11111111-1111-1111-1111-111111111002'
+                    AND x.permission_id = p.id
+                );

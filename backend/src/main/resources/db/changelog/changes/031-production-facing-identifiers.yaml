@@ -1,0 +1,138 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-production-facing-identifiers
+      author: aegisterra
+      comment: >
+        Competition-facing identifiers — replace RC1/DEMO prefixes in user-visible
+        business numbers, station codes, alert numbers, evidence URIs, and narrative text.
+      changes:
+        - sql:
+            sql: |
+              UPDATE farmers
+              SET farmer_code = replace(farmer_code, 'FRM-RC1-', 'FRM-2026-'),
+                  email = replace(email, '@demo.rw', '@aegisterra.rw'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (farmer_code LIKE 'FRM-RC1-%' OR email LIKE '%@demo.rw');
+
+              UPDATE farms
+              SET farm_code = replace(farm_code, 'FARM-RC1-', 'FARM-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND farm_code LIKE 'FARM-RC1-%';
+
+              UPDATE insurance_policies
+              SET policy_number = replace(policy_number, 'POL-RC1-2026-', 'POL-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND policy_number LIKE 'POL-RC1-2026-%';
+
+              UPDATE claims
+              SET claim_number = replace(claim_number, 'CLM-RC1-2026-', 'CLM-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND claim_number LIKE 'CLM-RC1-2026-%';
+
+              UPDATE settlements
+              SET settlement_number = replace(settlement_number, 'SET-RC1-2026-', 'SET-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND settlement_number LIKE 'SET-RC1-2026-%';
+
+              UPDATE climate_alerts
+              SET alert_number = replace(alert_number, 'ALT-RC1-2026-', 'ALT-2026-'),
+                  message = replace(replace(message, 'FARM-RC1-', 'FARM-2026-'), 'ALT-RC1-2026-', 'ALT-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (alert_number LIKE 'ALT-RC1-2026-%' OR message LIKE '%RC1%' OR message LIKE '%FARM-RC1-%');
+
+              UPDATE weather_stations
+              SET code = CASE
+                    WHEN code = 'DEMO-KGL-01' THEN 'KGL-01'
+                    WHEN code = 'DEMO-MUS-01' THEN 'MUS-01'
+                    WHEN code = 'DEMO-HUE-01' THEN 'HUE-01'
+                    WHEN code = 'DEMO-NYG-01' THEN 'NYG-01'
+                    ELSE code
+                  END,
+                  name = CASE
+                    WHEN name ILIKE '%demo%' THEN replace(replace(name, ' Demo ', ' '), 'Demo ', '')
+                    ELSE name
+                  END,
+                  external_station_id = CASE
+                    WHEN external_station_id LIKE 'DEMO-%' THEN replace(external_station_id, 'DEMO-', '')
+                    ELSE external_station_id
+                  END,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (code LIKE 'DEMO-%' OR name ILIKE '%demo%' OR external_station_id LIKE 'DEMO-%');
+
+              UPDATE weather_stations
+              SET name = 'Kigali Central Station',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE code = 'KGL-01'
+                AND deleted = false
+                AND (name ILIKE '%demo%' OR name = 'Kigali Station');
+
+              UPDATE claim_evidence
+              SET storage_uri = replace(replace(storage_uri, 'demo://claims/CLM-RC1-2026-', 'https://files.aegisterra.rw/claims/CLM-2026-'),
+                                        'demo://', 'https://files.aegisterra.rw/'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND storage_uri LIKE 'demo://%';
+
+              UPDATE notifications
+              SET body = replace(replace(replace(replace(replace(body,
+                    'ALT-RC1-2026-', 'ALT-2026-'),
+                    'FARM-RC1-', 'FARM-2026-'),
+                    'CLM-RC1-2026-', 'CLM-2026-'),
+                    'SET-RC1-2026-', 'SET-2026-'),
+                    'POL-RC1-2026-', 'POL-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (body LIKE '%RC1%' OR body LIKE '%DEMO-%');
+
+              UPDATE workflow_events
+              SET message = replace(replace(message, 'CLM-RC1-2026-', 'CLM-2026-'), 'SET-RC1-2026-', 'SET-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (message LIKE '%RC1%' OR message LIKE '%DEMO-%');
+
+              UPDATE workflow_tasks
+              SET description = replace(replace(description, 'CLM-RC1-2026-', 'CLM-2026-'), 'SET-RC1-2026-', 'SET-2026-'),
+                  payload_json = regexp_replace(
+                    regexp_replace(
+                      replace(replace(payload_json, 'CLM-RC1-2026-', 'CLM-2026-'), 'SET-RC1-2026-', 'SET-2026-'),
+                      '"demo":"[^"]*",',
+                      '',
+                      'g'
+                    ),
+                    ',"demo":"[^"]*"',
+                    '',
+                    'g'
+                  ),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (description LIKE '%RC1%' OR payload_json LIKE '%RC1%' OR payload_json LIKE '%"demo"%');
+
+              UPDATE ledger_entries
+              SET narration = replace(narration, 'SET-RC1-2026-', 'SET-2026-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND narration LIKE '%SET-RC1-%';
+
+              UPDATE ledger_transactions
+              SET transaction_number = replace(transaction_number, 'LTX-RC1-2026-', 'LTX-2026-'),
+                  description = replace(replace(description, 'SET-RC1-2026-', 'SET-2026-'), 'CLM-RC1-2026-', 'CLM-2026-'),
+                  correlation_id = replace(correlation_id, 'demo-settlement-', 'settlement-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (transaction_number LIKE 'LTX-RC1-%'
+                     OR description LIKE '%RC1%'
+                     OR correlation_id LIKE 'demo-%');
+
+              UPDATE workflow_instances
+              SET payload_json = replace(replace(payload_json, 'CLM-RC1-2026-', 'CLM-2026-'), 'SET-RC1-2026-', 'SET-2026-'),
+                  correlation_id = replace(replace(correlation_id, 'demo-claim-', 'claim-'), 'demo-settlement-', 'settlement-'),
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE deleted = false
+                AND (payload_json LIKE '%RC1%' OR correlation_id LIKE 'demo-%');

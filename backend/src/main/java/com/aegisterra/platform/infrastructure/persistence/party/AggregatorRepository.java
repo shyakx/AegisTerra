@@ -1,0 +1,9 @@
+package com.aegisterra.platform.infrastructure.persistence.party;
+
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AggregatorRepository extends JpaRepository<AggregatorEntity, UUID> {
+    Optional<AggregatorEntity> findByCodeAndDeletedFalse(String code);
+}

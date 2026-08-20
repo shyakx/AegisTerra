@@ -1,0 +1,262 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-rc1-demo-stations
+      author: aegisterra
+      comment: Additional weather stations for RC1 national demo map
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO weather_stations (id, code, name, geom, elevation_m, provider_code, external_station_id, district_code, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, v.code, v.name, ST_SetSRID(ST_MakePoint(v.lon, v.lat), 4326), v.elev, 'MANUAL', v.ext, v.district,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee501', 'DEMO-MUS-01', 'Musanze Highlands Station', 29.6340, -1.4990, 1850.00, 'DEMO-MUS', 'MUSANZE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee502', 'DEMO-HUE-01', 'Huye Southern Station', 29.7400, -2.5960, 1760.00, 'DEMO-HUE', 'HUYE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee503', 'DEMO-NYG-01', 'Nyagatare Eastern Station', 30.3250, -1.3080, 1450.00, 'DEMO-NYG', 'NYAGATARE')
+              ) AS v(id, code, name, lon, lat, elev, ext, district)
+              WHERE NOT EXISTS (SELECT 1 FROM weather_stations ws WHERE ws.code = v.code AND ws.deleted = false);
+
+  - changeSet:
+      id: 020-rc1-demo-observations
+      author: aegisterra
+      comment: 14-day observation series for demo stations (idempotent by station+day)
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO weather_observations (id, station_id, observed_at, temperature_c, rainfall_mm, humidity_pct, wind_speed_ms, source, created_at)
+              SELECT gen_random_uuid(), s.id, (CURRENT_DATE - d.day)::timestamp AT TIME ZONE 'UTC' + INTERVAL '12 hours',
+                     22.0 + (d.day % 5), CASE WHEN d.day % 4 = 0 THEN 18.5 + d.day ELSE 2.0 + (d.day % 3) END,
+                     65.0 + (d.day % 10), 2.5 + (d.day % 3) * 0.4, 'RC1_DEMO_SEED', CURRENT_TIMESTAMP
+              FROM weather_stations s
+              CROSS JOIN generate_series(0, 13) AS d(day)
+              WHERE s.code IN ('DEMO-KGL-01', 'DEMO-MUS-01', 'DEMO-HUE-01', 'DEMO-NYG-01')
+                AND s.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM weather_observations o
+                  WHERE o.station_id = s.id
+                    AND o.source = 'RC1_DEMO_SEED'
+                    AND date_trunc('day', o.observed_at AT TIME ZONE 'UTC') = (CURRENT_DATE - d.day)
+                );
+
+  - changeSet:
+      id: 020-rc1-demo-households-farmers
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO households (id, code, head_name, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, v.code, v.head, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee101', 'HH-RC1-001', 'Jean Baptiste Niyonzima'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee102', 'HH-RC1-002', 'Marie Claire Uwase'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee103', 'HH-RC1-003', 'Emmanuel Habimana'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee104', 'HH-RC1-004', 'Grace Mukamana'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee105', 'HH-RC1-005', 'Patrick Nzeyimana'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee106', 'HH-RC1-006', 'Alice Ingabire'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee107', 'HH-RC1-007', 'David Mugisha'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee108', 'HH-RC1-008', 'Sarah Uwimana')
+              ) AS v(id, code, head)
+              WHERE NOT EXISTS (SELECT 1 FROM households h WHERE h.code = v.code AND h.deleted = false);
+
+              INSERT INTO farmers (id, household_id, first_name, last_name, national_id, phone_number, email, farmer_code, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, v.hh::uuid, v.fn, v.ln, v.nid, v.phone, v.email, v.fcode,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee201', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee101', 'Jean', 'Niyonzima', '1199880011223344', '0788110001', 'jean.niyonzima@demo.rw', 'FRM-RC1-001'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee202', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee102', 'Marie', 'Uwase', '1199880011223345', '0788110002', 'marie.uwase@demo.rw', 'FRM-RC1-002'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee203', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee103', 'Emmanuel', 'Habimana', '1199880011223346', '0788110003', 'emmanuel.h@demo.rw', 'FRM-RC1-003'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee204', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee104', 'Grace', 'Mukamana', '1199880011223347', '0788110004', 'grace.m@demo.rw', 'FRM-RC1-004'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee205', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee105', 'Patrick', 'Nzeyimana', '1199880011223348', '0788110005', 'patrick.n@demo.rw', 'FRM-RC1-005'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee206', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee106', 'Alice', 'Ingabire', '1199880011223349', '0788110006', 'alice.i@demo.rw', 'FRM-RC1-006'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee207', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee107', 'David', 'Mugisha', '1199880011223350', '0788110007', 'david.m@demo.rw', 'FRM-RC1-007'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee208', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee108', 'Sarah', 'Uwimana', '1199880011223351', '0788110008', 'sarah.u@demo.rw', 'FRM-RC1-008')
+              ) AS v(id, hh, fn, ln, nid, phone, email, fcode)
+              WHERE NOT EXISTS (SELECT 1 FROM farmers f WHERE f.farmer_code = v.fcode AND f.deleted = false);
+
+  - changeSet:
+      id: 020-rc1-demo-farms-boundaries
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO farms (id, farmer_id, farm_code, farm_name, farm_size_ha, crop_type, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, v.farmer::uuid, v.code, v.name, v.size, v.crop, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee201', 'FARM-RC1-001', 'Niyonzima Maize Plot', 2.40, 'MAIZE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee201', 'FARM-RC1-002', 'Niyonzima Beans Plot', 1.10, 'BEANS'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee202', 'FARM-RC1-003', 'Uwase Irish Potato Farm', 1.80, 'POTATO'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee304', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee203', 'FARM-RC1-004', 'Habimana Rice Terrace', 3.20, 'RICE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee204', 'FARM-RC1-005', 'Mukamana Mixed Crops', 2.00, 'MAIZE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee306', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee205', 'FARM-RC1-006', 'Nzeyimana Sorghum Field', 2.60, 'SORGHUM'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee307', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee206', 'FARM-RC1-007', 'Ingabire Cassava Farm', 1.50, 'CASSAVA'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee308', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee207', 'FARM-RC1-008', 'Mugisha Banana Grove', 1.20, 'BANANA'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee309', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee208', 'FARM-RC1-009', 'Uwimana Tea Slope', 4.00, 'TEA'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee310', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee203', 'FARM-RC1-010', 'Habimana Secondary Plot', 0.90, 'BEANS'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee311', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee205', 'FARM-RC1-011', 'Nzeyimana Valley Plot', 1.70, 'MAIZE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee312', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee206', 'FARM-RC1-012', 'Ingabire Upland Plot', 1.30, 'POTATO')
+              ) AS v(id, farmer, code, name, size, crop)
+              WHERE NOT EXISTS (SELECT 1 FROM farms f WHERE f.farm_code = v.code AND f.deleted = false);
+
+              INSERT INTO farm_boundaries (id, farm_id, geom, source, captured_at, area_ha, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, v.farm::uuid,
+                     ST_Multi(ST_SetSRID(ST_GeomFromText(
+                       'POLYGON((' || v.lon || ' ' || v.lat || ',' ||
+                       (v.lon + 0.008) || ' ' || v.lat || ',' ||
+                       (v.lon + 0.008) || ' ' || (v.lat + 0.006) || ',' ||
+                       v.lon || ' ' || (v.lat + 0.006) || ',' ||
+                       v.lon || ' ' || v.lat || '))'
+                     ), 4326)),
+                     'RC1_DEMO_SEED', CURRENT_TIMESTAMP, v.area,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee401', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 30.0500, -1.9500, 2.40),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee402', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 30.0600, -1.9550, 1.10),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee403', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 29.6300, -1.5050, 1.80),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee404', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee304', 29.7350, -2.6000, 3.20),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee405', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 30.3200, -1.3100, 2.00),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee406', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee306', 30.3300, -1.3200, 2.60),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee407', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee307', 29.6400, -1.5100, 1.50),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee408', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee308', 30.0550, -1.9400, 1.20)
+              ) AS v(id, farm, lon, lat, area)
+              WHERE NOT EXISTS (SELECT 1 FROM farm_boundaries fb WHERE fb.id = v.id::uuid);
+
+  - changeSet:
+      id: 020-rc1-demo-policies-claims-settlements
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO insurance_policies (
+                id, policy_number, farmer_id, farm_id, policy_type_id, product_id, coverage_package_id,
+                coverage_amount, premium_amount, currency, start_date, end_date, issued_at,
+                created_at, updated_at, version, status, deleted
+              )
+              SELECT v.id::uuid, v.pnum, v.farmer::uuid, v.farm::uuid,
+                     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa002'::uuid,
+                     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa001'::uuid,
+                     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaa003'::uuid,
+                     v.coverage, v.premium, 'RWF', CURRENT_DATE - 60, CURRENT_DATE + 120,
+                     CASE WHEN v.status = 'ACTIVE' THEN CURRENT_TIMESTAMP - INTERVAL '45 days' ELSE NULL END,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, v.status, FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee601', 'POL-RC1-2026-001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee201', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 1440000.0000, 72000.0000, 'ACTIVE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee602', 'POL-RC1-2026-002', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee202', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 1080000.0000, 54000.0000, 'ACTIVE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee603', 'POL-RC1-2026-003', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee203', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee304', 1920000.0000, 96000.0000, 'ACTIVE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee604', 'POL-RC1-2026-004', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee204', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 1200000.0000, 60000.0000, 'DRAFT'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee605', 'POL-RC1-2026-005', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee205', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee306', 1560000.0000, 78000.0000, 'ACTIVE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee606', 'POL-RC1-2026-006', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee206', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee307', 900000.0000, 45000.0000, 'ACTIVE')
+              ) AS v(id, pnum, farmer, farm, coverage, premium, status)
+              WHERE NOT EXISTS (SELECT 1 FROM insurance_policies p WHERE p.policy_number = v.pnum AND p.deleted = false);
+
+              INSERT INTO claims (
+                id, claim_number, policy_id, claimed_amount, currency, incident_date, description,
+                claim_type_code, farmer_id, farm_id, cause_of_loss, assessed_amount, approved_amount,
+                submitted_at, created_at, updated_at, version, status, deleted
+              )
+              SELECT v.id::uuid, v.cnum, v.policy::uuid, v.claimed, 'RWF', CURRENT_DATE - v.days_ago, v.descr,
+                     v.ctype, v.farmer::uuid, v.farm::uuid, v.cause, v.assessed, v.approved,
+                     CURRENT_TIMESTAMP - (v.days_ago || ' days')::interval,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, v.status, FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'CLM-RC1-2026-001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee601', 450000.0000, 12, 'Drought stress on maize tasseling', 'DROUGHT', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee201', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'Drought', 420000.0000, 400000.0000, 'APPROVED'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee702', 'CLM-RC1-2026-002', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee602', 280000.0000, 8, 'Excess rainfall lodging potatoes', 'FLOOD', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee202', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'Flood', 250000.0000, NULL, 'SUBMITTED'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'CLM-RC1-2026-003', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee603', 520000.0000, 20, 'Rice field inundation after storm', 'FLOOD', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee203', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee304', 'Flood', 500000.0000, 480000.0000, 'PAYMENT_PENDING'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee704', 'CLM-RC1-2026-004', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee605', 150000.0000, 5, 'Pest damage draft assessment', 'PEST_DISEASE', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee205', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee306', 'Pest', NULL, NULL, 'DRAFT')
+              ) AS v(id, cnum, policy, claimed, days_ago, descr, ctype, farmer, farm, cause, assessed, approved, status)
+              WHERE NOT EXISTS (SELECT 1 FROM claims c WHERE c.claim_number = v.cnum AND c.deleted = false);
+
+              INSERT INTO settlements (
+                id, settlement_number, source_module, source_record_id, source_reference, amount, currency, exchange_rate,
+                payment_method, provider_code, beneficiary_name, beneficiary_account, financial_snapshot_json,
+                submitted_at, completed_at, created_at, updated_at, version, status, deleted
+              )
+              SELECT v.id::uuid, v.snum, 'CLAIMS', v.claim::uuid, v.cnum, v.amount, 'RWF', 1,
+                     'BANK_TRANSFER', 'MANUAL', v.ben, v.acct,
+                     '{"currency":"RWF","source":"RC1_DEMO_SEED","approvedAmount":' || v.amount || '}',
+                     CURRENT_TIMESTAMP - INTERVAL '10 days',
+                     CASE WHEN v.status = 'COMPLETED' THEN CURRENT_TIMESTAMP - INTERVAL '3 days' ELSE NULL END,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, v.status, FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee801', 'SET-RC1-2026-001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'CLM-RC1-2026-001', 400000.0000, 'Jean Niyonzima', 'RW-BANK-1001', 'COMPLETED'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee802', 'SET-RC1-2026-002', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'CLM-RC1-2026-003', 480000.0000, 'Emmanuel Habimana', 'RW-BANK-1003', 'PENDING')
+              ) AS v(id, snum, claim, cnum, amount, ben, acct, status)
+              WHERE NOT EXISTS (SELECT 1 FROM settlements s WHERE s.settlement_number = v.snum AND s.deleted = false);
+
+  - changeSet:
+      id: 020-rc1-demo-climate-intel
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO risk_scores (
+                id, farm_id, score, confidence, model_version, calculated_at, grade,
+                window_start, window_end, components_json, rule_set_code, rule_version,
+                subject_type, district_code, created_at, updated_at, version, status, deleted
+              )
+              SELECT v.id::uuid, v.farm::uuid, v.score, 0.8500, 'CLIMATE_RISK_V1', CURRENT_TIMESTAMP,
+                     v.grade, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP,
+                     '{"drought":0.4,"flood":0.2,"rainfall":0.3,"vegetation":0.1}',
+                     'CLIMATE_RISK_V1', '1.0.0', 'FARM', v.district,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea01', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 62.500000, 'HIGH', 'KIGALI'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea02', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 38.000000, 'MODERATE', 'MUSANZE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea03', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee304', 78.250000, 'EXTREME', 'HUYE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea04', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 22.000000, 'LOW', 'NYAGATARE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea05', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee306', 55.000000, 'HIGH', 'NYAGATARE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea06', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee307', 41.500000, 'MODERATE', 'MUSANZE'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea07', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee308', 18.750000, 'LOW', 'KIGALI'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeea08', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee309', 48.000000, 'MODERATE', 'MUSANZE')
+              ) AS v(id, farm, score, grade, district)
+              WHERE NOT EXISTS (SELECT 1 FROM risk_scores r WHERE r.id = v.id::uuid);
+
+              INSERT INTO climate_alerts (
+                id, alert_number, alert_type, severity, scope_type, scope_id, farm_id, district_code,
+                title, message, valid_from, valid_to, rule_set_code, rule_version,
+                created_at, updated_at, version, status, deleted
+              )
+              SELECT v.id::uuid, v.anum, v.atype, v.sev, 'FARM', v.farm, v.farm::uuid, v.district,
+                     v.title, v.msg, CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP + INTERVAL '14 days',
+                     'CLIMATE_RISK_V1', '1.0.0', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'OPEN', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee901', 'ALT-RC1-2026-001', 'DROUGHT', 'CRITICAL', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'KIGALI', 'Critical drought watch — Kigali maize', 'Soil moisture and rainfall deficits exceed drought thresholds for farm FARM-RC1-001.'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee902', 'ALT-RC1-2026-002', 'FLOOD', 'WARNING', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee304', 'HUYE', 'Flood warning — Huye rice', 'Accumulated rainfall in the last 72 hours exceeds flood watch thresholds.'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee903', 'ALT-RC1-2026-003', 'RAINFALL_EXTREME', 'WATCH', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'MUSANZE', 'Rainfall anomaly — Musanze', 'Rolling rainfall totals deviate from seasonal normals.'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee904', 'ALT-RC1-2026-004', 'VEGETATION_STRESS', 'INFO', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee306', 'NYAGATARE', 'Vegetation stress watch', 'Vegetation stress indicator elevated for eastern dryland crops.')
+              ) AS v(id, anum, atype, sev, farm, district, title, msg)
+              WHERE NOT EXISTS (SELECT 1 FROM climate_alerts a WHERE a.alert_number = v.anum AND a.deleted = false);
+
+              INSERT INTO district_risk_snapshots (
+                id, district_code, score, grade, confidence, farm_count, open_alert_count, components_json,
+                window_start, window_end, rule_set_code, rule_version, calculated_at,
+                created_at, updated_at, version, status, deleted
+              )
+              SELECT v.id::uuid, v.code, v.score, v.grade, 0.8000, v.farms, v.alerts,
+                     '{"source":"RC1_DEMO_SEED"}',
+                     CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP,
+                     'CLIMATE_RISK_V1', '1.0.0', CURRENT_TIMESTAMP,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeb01', 'KIGALI', 40.500000, 'MODERATE', 3, 1),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeb02', 'MUSANZE', 42.500000, 'MODERATE', 3, 1),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeb03', 'HUYE', 78.250000, 'EXTREME', 2, 1),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeb04', 'NYAGATARE', 38.500000, 'MODERATE', 3, 1)
+              ) AS v(id, code, score, grade, farms, alerts)
+              WHERE NOT EXISTS (SELECT 1 FROM district_risk_snapshots d WHERE d.id = v.id::uuid);
+
+  - changeSet:
+      id: 020-rc1-demo-notifications
+      author: aegisterra
+      comment: Unread demo notifications (user_id attached at runtime by Rc1DemoNotificationBinder when admin exists)
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO notifications (id, user_id, channel, title, body, sent_at, read_at, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, NULL, 'IN_APP', v.title, v.body, CURRENT_TIMESTAMP, NULL,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'SENT', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeec01', 'Critical drought alert opened', 'Climate Intelligence opened alert ALT-RC1-2026-001 for farm FARM-RC1-001.'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeec02', 'Settlement pending review', 'Settlement SET-RC1-2026-002 requires finance review before payment execution.'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeec03', 'Claim submitted', 'Claim CLM-RC1-2026-002 was submitted and awaits validation.')
+              ) AS v(id, title, body)
+              WHERE NOT EXISTS (SELECT 1 FROM notifications n WHERE n.id = v.id::uuid);

@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 028-demo-task-persona-assignment
+      author: aegisterra
+      comment: >
+        G1 demo fix — reassign existing OPEN actionable tasks from SYSTEM_ADMIN role pool
+        to the persona role pools that should act on them (INSURANCE_OFFICER claim validation,
+        FI_OFFICER settlement finance review). Uses existing task IDs from 023; does not
+        widen visibility beyond assignee_role_code matching in /tasks/my.
+      changes:
+        - sql:
+            sql: |
+              -- Claim validation task → INSURANCE_OFFICER role pool
+              UPDATE workflow_tasks
+              SET assignee_role_code = 'INSURANCE_OFFICER',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE id = 'dddddddd-dddd-dddd-dddd-ddddddddd023'::uuid
+                AND deleted = false
+                AND status = 'PENDING'
+                AND assignee_user_id IS NULL
+                AND subject_type = 'CLAIM'
+                AND (assignee_role_code IS DISTINCT FROM 'INSURANCE_OFFICER');
+
+              -- Settlement finance review task → FI_OFFICER role pool
+              UPDATE workflow_tasks
+              SET assignee_role_code = 'FI_OFFICER',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE id = 'dddddddd-dddd-dddd-dddd-ddddddddd024'::uuid
+                AND deleted = false
+                AND status = 'PENDING'
+                AND assignee_user_id IS NULL
+                AND subject_type = 'SETTLEMENT'
+                AND (assignee_role_code IS DISTINCT FROM 'FI_OFFICER');

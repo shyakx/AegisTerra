@@ -1,0 +1,154 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-demo-rc2-operational-seed
+      author: aegisterra
+      comment: Add operational workflow, assessments, and claim narrative records needed for the demo drill-down experience.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO workflow_instances (
+                id, definition_id, definition_version_id, subject_type, subject_id, current_step_code,
+                correlation_id, payload_json, started_at, completed_at, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT v.id::uuid, v.definition_id::uuid, v.version_id::uuid, v.subject_type, v.subject_id::uuid,
+                     v.current_step_code, v.correlation_id, v.payload_json, v.started_at, v.completed_at,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, 0, v.status, FALSE
+              FROM (VALUES
+                ('cccccccc-cccc-cccc-cccc-ccccccccc101', 'cccccccc-cccc-cccc-cccc-ccccccccc001', 'cccccccc-cccc-cccc-cccc-ccccccccc011', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'DONE_APPROVED', 'demo-claim-701', '{"claimNumber":"CLM-RC1-2026-001"}', CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '2 days', 'COMPLETED'),
+                ('cccccccc-cccc-cccc-cccc-ccccccccc102', 'cccccccc-cccc-cccc-cccc-ccccccccc001', 'cccccccc-cccc-cccc-cccc-ccccccccc011', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702', 'INSPECTION', 'demo-claim-702', '{"claimNumber":"CLM-RC1-2026-002"}', CURRENT_TIMESTAMP - INTERVAL '3 days', NULL, 'ACTIVE'),
+                ('cccccccc-cccc-cccc-cccc-ccccccccc103', 'cccccccc-cccc-cccc-cccc-ccccccccc001', 'cccccccc-cccc-cccc-cccc-ccccccccc011', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'DONE_APPROVED', 'demo-claim-703', '{"claimNumber":"CLM-RC1-2026-003"}', CURRENT_TIMESTAMP - INTERVAL '6 days', CURRENT_TIMESTAMP - INTERVAL '1 day', 'COMPLETED')
+              ) AS v(id, definition_id, version_id, subject_type, subject_id, current_step_code, correlation_id, payload_json, started_at, completed_at, status)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM workflow_instances wi
+                WHERE wi.subject_type = v.subject_type
+                  AND wi.subject_id = v.subject_id::uuid
+                  AND wi.deleted = false
+              );
+
+              INSERT INTO workflow_tasks (
+                id, instance_id, workflow_step_id, step_code, task_type, title, description,
+                subject_type, subject_id, assignee_user_id, assignee_role_code, priority, due_at,
+                payload_json, outcome, completed_at, completed_by, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT v.id::uuid, v.instance_id::uuid, NULL, v.step_code, v.task_type, v.title, v.description,
+                     v.subject_type, v.subject_id::uuid, NULL, v.assignee_role_code, v.priority,
+                     v.due_at, v.payload_json, v.outcome, v.completed_at, NULL,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, 0, v.status, FALSE
+              FROM (VALUES
+                ('dddddddd-dddd-dddd-dddd-dddddddddd01', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'VALIDATION', 'VERIFICATION', 'Validate claim intake', 'Initial validation review for drought claim evidence.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'SYSTEM_ADMIN', 100, CURRENT_TIMESTAMP - INTERVAL '4 days', '{"claimNumber":"CLM-RC1-2026-001"}', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '3 days', 'COMPLETED'),
+                ('dddddddd-dddd-dddd-dddd-dddddddddd02', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'INSPECTION', 'INSPECTION', 'Inspect loss site', 'Field inspection and damage depth check for the maize plot.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'SYSTEM_ADMIN', 90, CURRENT_TIMESTAMP - INTERVAL '3 days', '{"claimNumber":"CLM-RC1-2026-001"}', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '2 days', 'COMPLETED'),
+                ('dddddddd-dddd-dddd-dddd-dddddddddd03', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'ASSESSMENT', 'VERIFICATION', 'Assess indemnity', 'Determine approved claim value against policy residual.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'SYSTEM_ADMIN', 80, CURRENT_TIMESTAMP - INTERVAL '2 days', '{"claimNumber":"CLM-RC1-2026-001"}', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '2 days', 'COMPLETED'),
+                ('dddddddd-dddd-dddd-dddd-dddddddddd04', 'cccccccc-cccc-cccc-cccc-ccccccccc102', 'VALIDATION', 'VERIFICATION', 'Validate claim intake', 'Check whether flood claim meets policy conditions.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702', 'SYSTEM_ADMIN', 95, CURRENT_TIMESTAMP - INTERVAL '3 days', '{"claimNumber":"CLM-RC1-2026-002"}', 'RETURNED', CURRENT_TIMESTAMP - INTERVAL '1 day', 'COMPLETED'),
+                ('dddddddd-dddd-dddd-dddd-dddddddddd05', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'VALIDATION', 'VERIFICATION', 'Validate claim intake', 'Review flood claim packet before approval.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'SYSTEM_ADMIN', 70, CURRENT_TIMESTAMP - INTERVAL '6 days', '{"claimNumber":"CLM-RC1-2026-003"}', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '5 days', 'COMPLETED'),
+                ('dddddddd-dddd-dddd-dddd-dddddddddd06', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'DECISION', 'APPROVAL', 'Adjudicate claim', 'Approve final indemnity for reviewed rice inundation claim.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'SYSTEM_ADMIN', 60, CURRENT_TIMESTAMP - INTERVAL '2 days', '{"claimNumber":"CLM-RC1-2026-003"}', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '1 day', 'COMPLETED')
+              ) AS v(id, instance_id, step_code, task_type, title, description, subject_type, subject_id, assignee_role_code, priority, due_at, payload_json, outcome, completed_at, status)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM workflow_tasks wt
+                WHERE wt.subject_id = v.subject_id::uuid
+                  AND wt.step_code = v.step_code
+                  AND wt.deleted = false
+              );
+
+              INSERT INTO workflow_decisions (
+                id, task_id, instance_id, step_code, decision_type_code, outcome_code, effect,
+                workflow_action, comment_text, target_user_id, subject_type, subject_id, decided_by,
+                decided_at, created_at, updated_at, created_by, updated_by, version, status, deleted
+              )
+              SELECT v.id::uuid, v.task_id::uuid, v.instance_id::uuid, v.step_code, v.decision_type_code,
+                     v.outcome_code, v.effect, v.workflow_action, v.comment_text, NULL,
+                     v.subject_type, v.subject_id::uuid, '11111111-1111-1111-1111-111111111001'::uuid,
+                     v.decided_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '11111111-1111-1111-1111-111111111001'::uuid,
+                     '11111111-1111-1111-1111-111111111001'::uuid, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeee0101', 'dddddddd-dddd-dddd-dddd-dddddddddd01', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'VALIDATION', 'APPROVE', 'APPROVED', 'COMPLETE_AND_ADVANCE', 'APPROVE', 'Drought evidence meets the required threshold for approval.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', CURRENT_TIMESTAMP - INTERVAL '3 days'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeee0102', 'dddddddd-dddd-dddd-dddd-dddddddddd02', 'cccccccc-cccc-cccc-cccc-ccccccccc101', 'INSPECTION', 'APPROVE', 'APPROVED', 'COMPLETE_AND_ADVANCE', 'APPROVE', 'Site inspection confirmed crop damage and extent.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeee0103', 'dddddddd-dddd-dddd-dddd-dddddddddd06', 'cccccccc-cccc-cccc-cccc-ccccccccc103', 'DECISION', 'APPROVE', 'APPROVED', 'COMPLETE_AND_ADVANCE', 'APPROVE', 'Final adjudication approved the indemnity payment.', 'CLAIM', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', CURRENT_TIMESTAMP - INTERVAL '1 day')
+              ) AS v(id, task_id, instance_id, step_code, decision_type_code, outcome_code, effect, workflow_action, comment_text, subject_type, subject_id, decided_at)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM workflow_decisions wd
+                WHERE wd.task_id = v.task_id::uuid
+                  AND wd.decision_type_code = v.decision_type_code
+                  AND wd.deleted = false
+              );
+
+              INSERT INTO claim_inspections (
+                id, claim_id, inspector_id, scheduled_at, completed_at, check_in_latitude,
+                check_in_longitude, findings_json, checklist_json, notes, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT v.id::uuid, v.claim_id::uuid, NULL, v.scheduled_at, v.completed_at,
+                     v.check_in_latitude, v.check_in_longitude, v.findings_json, v.checklist_json,
+                     v.notes, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, 0, v.status, FALSE
+              FROM (VALUES
+                ('a1111111-1111-1111-1111-111111111001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP - INTERVAL '2 days', -1.4990, 29.6340, '{"site":"Niyonzima maize plot","damage":"drought stress confirmed"}', '{"items":["SITE_VISIT","PHOTO_REVIEW","CROP_DAMAGE_CHECK"]}', 'Field inspection confirmed severe drought stress and partial lodging.', 'COMPLETED'),
+                ('a1111111-1111-1111-1111-111111111002', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702', CURRENT_TIMESTAMP - INTERVAL '2 days', NULL, -2.5960, 29.7400, '{"site":"Uwase potato field","damage":"pending additional evidence"}', '{"items":["SITE_VISIT","SOIL_ASSESSMENT"]}', 'Awaiting a final weather verification reference before acceptance.', 'SCHEDULED'),
+                ('a1111111-1111-1111-1111-111111111003', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '4 days', -2.6000, 29.7350, '{"site":"Habimana rice terrace","damage":"rice inundation and silt damage"}', '{"items":["SITE_VISIT","WATER_DEPTH_CHECK","PHOTO_REVIEW"]}', 'Flood damage severity and waterlogging were confirmed by the field review.', 'COMPLETED')
+              ) AS v(id, claim_id, scheduled_at, completed_at, check_in_latitude, check_in_longitude, findings_json, checklist_json, notes, status)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM claim_inspections ci
+                WHERE ci.claim_id = v.claim_id::uuid
+                  AND ci.deleted = false
+              );
+
+              INSERT INTO claim_assessments (
+                id, claim_id, assessor_user_id, assessed_amount, notes, assessed_at, created_at,
+                updated_at, created_by, updated_by, version, status, deleted, inspection_id,
+                methods_json, findings_json, recommended_amount, currency, confidence, fraud_hints_json,
+                assessor_id, accepted
+              )
+              SELECT v.id::uuid, v.claim_id::uuid, NULL, v.assessed_amount, v.notes, v.assessed_at,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, 0, 'ACTIVE', FALSE, v.inspection_id::uuid,
+                     v.methods_json, v.findings_json, v.recommended_amount, v.currency, v.confidence,
+                     v.fraud_hints_json, NULL, v.accepted
+              FROM (VALUES
+                ('b2222222-2222-2222-2222-222222222001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 400000.0000, 'Drought loss validated against rainfall and field evidence.', CURRENT_TIMESTAMP - INTERVAL '2 days', 'a1111111-1111-1111-1111-111111111001', '["PHOTO_EVIDENCE","SATELLITE_VERIFICATION","FIELD_INSPECTION"]', '{"severity":"HIGH","crop":"MAIZE","lossType":"DROUGHT"}', 400000.0000, 'RWF', 0.92, '{"flags":["rainfall_deficit"]}', TRUE),
+                ('b2222222-2222-2222-2222-222222222002', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702', 245000.0000, 'Claim requires extra weather verification before final approval.', CURRENT_TIMESTAMP - INTERVAL '1 day', 'a1111111-1111-1111-1111-111111111002', '["PHOTO_EVIDENCE","WEATHER_VERIFICATION"]', '{"severity":"MODERATE","crop":"POTATO","lossType":"FLOOD"}', 245000.0000, 'RWF', 0.74, '{"flags":["missing_evidence"]}', FALSE),
+                ('b2222222-2222-2222-2222-222222222003', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 480000.0000, 'Confirmed flood inundation and crop damage across the terrace.', CURRENT_TIMESTAMP - INTERVAL '1 day', 'a1111111-1111-1111-1111-111111111003', '["PHOTO_EVIDENCE","FIELD_INSPECTION","WEATHER_VERIFICATION"]', '{"severity":"HIGH","crop":"RICE","lossType":"FLOOD"}', 480000.0000, 'RWF', 0.90, '{"flags":["waterlogging"]}', TRUE)
+              ) AS v(id, claim_id, assessed_amount, notes, assessed_at, inspection_id, methods_json, findings_json, recommended_amount, currency, confidence, fraud_hints_json, accepted)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM claim_assessments ca
+                WHERE ca.claim_id = v.claim_id::uuid
+                  AND ca.deleted = false
+              );
+
+              INSERT INTO claim_status_history (
+                id, claim_id, from_status, to_status, reason, actor_id, occurred_at,
+                created_at, updated_at, created_by, updated_by, version, status, deleted
+              )
+              SELECT v.id::uuid, v.claim_id::uuid, v.from_status, v.to_status, v.reason, NULL,
+                     v.occurred_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, NULL, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('c3333333-3333-3333-3333-333333333001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'SUBMITTED', 'UNDER_VALIDATION', 'Initial validation review started.', CURRENT_TIMESTAMP - INTERVAL '4 days'),
+                ('c3333333-3333-3333-3333-333333333002', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'UNDER_VALIDATION', 'APPROVED', 'Drought evidence and field inspection support approval.', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+                ('c3333333-3333-3333-3333-333333333003', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702', 'SUBMITTED', 'UNDER_VALIDATION', 'Awaiting weather verification before a decision.', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+                ('c3333333-3333-3333-3333-333333333004', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'SUBMITTED', 'UNDER_VALIDATION', 'Flood claim packet under review.', CURRENT_TIMESTAMP - INTERVAL '6 days'),
+                ('c3333333-3333-3333-3333-333333333005', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'UNDER_VALIDATION', 'APPROVED', 'Field evidence and rainfall check confirmed payout eligibility.', CURRENT_TIMESTAMP - INTERVAL '1 day')
+              ) AS v(id, claim_id, from_status, to_status, reason, occurred_at)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM claim_status_history csh
+                WHERE csh.claim_id = v.claim_id::uuid
+                  AND csh.to_status = v.to_status
+                  AND csh.deleted = false
+              );
+
+              INSERT INTO claim_decision_records (
+                id, claim_id, workflow_decision_id, outcome_code, approved_amount, reason_code,
+                comment, decided_by, decided_at, created_at, updated_at, created_by, updated_by,
+                version, status, deleted
+              )
+              SELECT v.id::uuid, v.claim_id::uuid, v.workflow_decision_id::uuid, v.outcome_code,
+                     v.approved_amount, v.reason_code, v.comment, '11111111-1111-1111-1111-111111111001'::uuid,
+                     v.decided_at, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, '11111111-1111-1111-1111-111111111001'::uuid,
+                     '11111111-1111-1111-1111-111111111001'::uuid, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('d4444444-4444-4444-4444-444444444001', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701', 'eeeeeeee-eeee-eeee-eeee-eeeeeeee0101', 'APPROVED', 400000.0000, 'APPROVED', 'Drought claim approved after validated field evidence.', CURRENT_TIMESTAMP - INTERVAL '3 days'),
+                ('d4444444-4444-4444-4444-444444444002', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703', 'eeeeeeee-eeee-eeee-eeee-eeeeeeee0103', 'APPROVED', 480000.0000, 'APPROVED', 'Flood claim approved for payment following final review.', CURRENT_TIMESTAMP - INTERVAL '1 day')
+              ) AS v(id, claim_id, workflow_decision_id, outcome_code, approved_amount, reason_code, comment, decided_at)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM claim_decision_records cdr
+                WHERE cdr.claim_id = v.claim_id::uuid
+                  AND cdr.outcome_code = v.outcome_code
+                  AND cdr.deleted = false
+              );

@@ -1,0 +1,139 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-demo-seed-claim-evidence
+      author: aegisterra
+      comment: >
+        Synthetic claim_evidence metadata for RC1 demo claims (metadata/storage_uri only;
+        no blob bytes). Document types align with claim_type_document_rules catalog.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO claim_evidence (
+                id, claim_id, document_type, title, document_id, storage_uri, content_sha256,
+                latitude, longitude, captured_at, source,
+                created_at, updated_at, created_by, updated_by, version, status, deleted
+              )
+              SELECT
+                v.id::uuid,
+                v.claim_id::uuid,
+                v.document_type,
+                v.title,
+                NULL,
+                v.storage_uri,
+                v.content_sha256,
+                v.latitude,
+                v.longitude,
+                CURRENT_TIMESTAMP - (v.days_ago || ' days')::interval,
+                v.source,
+                CURRENT_TIMESTAMP - (v.days_ago || ' days')::interval,
+                CURRENT_TIMESTAMP,
+                NULL,
+                NULL,
+                0,
+                'ACTIVE',
+                FALSE
+              FROM (VALUES
+                -- Claim A: CLM-RC1-2026-001 (DROUGHT / APPROVED)
+                (
+                  'a5555555-5555-5555-5555-555555555001',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701',
+                  'CLAIM_FORM',
+                  'Farmer declaration — drought loss maize',
+                  'demo://claims/CLM-RC1-2026-001/farmer-declaration.pdf',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b001',
+                  NULL::numeric, NULL::numeric, 12, 'MANUAL'
+                ),
+                (
+                  'a5555555-5555-5555-5555-555555555002',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701',
+                  'PHOTO',
+                  'Damage photographs — maize tasseling stress',
+                  'demo://claims/CLM-RC1-2026-001/damage-photos-01.jpg',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b002',
+                  -1.4990000, 29.6340000, 11, 'FIELD_APP'
+                ),
+                (
+                  'a5555555-5555-5555-5555-555555555003',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee701',
+                  'THIRD_PARTY',
+                  'Farm inspection report — Musanze maize plot',
+                  'demo://claims/CLM-RC1-2026-001/farm-inspection-report.pdf',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b003',
+                  -1.4990000, 29.6340000, 10, 'MANUAL'
+                ),
+
+                -- Claim B: CLM-RC1-2026-002 (FLOOD / SUBMITTED)
+                (
+                  'a5555555-5555-5555-5555-555555555004',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702',
+                  'CLAIM_FORM',
+                  'Identity / KYC document — Marie Uwase',
+                  'demo://claims/CLM-RC1-2026-002/kyc-national-id.pdf',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b004',
+                  NULL::numeric, NULL::numeric, 8, 'MANUAL'
+                ),
+                (
+                  'a5555555-5555-5555-5555-555555555005',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702',
+                  'THIRD_PARTY',
+                  'Field inspection report — potato lodging',
+                  'demo://claims/CLM-RC1-2026-002/field-inspection-report.pdf',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b005',
+                  -2.5960000, 29.7400000, 7, 'MANUAL'
+                ),
+                (
+                  'a5555555-5555-5555-5555-555555555006',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee702',
+                  'PHOTO',
+                  'Damage assessment photographs — flooded ridges',
+                  'demo://claims/CLM-RC1-2026-002/damage-assessment-photos.jpg',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b006',
+                  -2.5960000, 29.7400000, 7, 'FIELD_APP'
+                ),
+
+                -- Claim C: CLM-RC1-2026-003 (FLOOD / PAYMENT_PENDING)
+                (
+                  'a5555555-5555-5555-5555-555555555007',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703',
+                  'CLAIM_FORM',
+                  'Incident report — rice terrace inundation',
+                  'demo://claims/CLM-RC1-2026-003/incident-report.pdf',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b007',
+                  NULL::numeric, NULL::numeric, 20, 'MANUAL'
+                ),
+                (
+                  'a5555555-5555-5555-5555-555555555008',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703',
+                  'PHOTO',
+                  'Supporting photographs — silt and waterlogging',
+                  'demo://claims/CLM-RC1-2026-003/supporting-photos.jpg',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b008',
+                  -2.6000000, 29.7350000, 19, 'FIELD_APP'
+                ),
+                (
+                  'a5555555-5555-5555-5555-555555555009',
+                  'eeeeeeee-eeee-eeee-eeee-eeeeeeeee703',
+                  'THIRD_PARTY',
+                  'Damage assessment documentation — rice inundation',
+                  'demo://claims/CLM-RC1-2026-003/damage-assessment.pdf',
+                  'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b009',
+                  -2.6000000, 29.7350000, 18, 'MANUAL'
+                )
+              ) AS v(
+                id, claim_id, document_type, title, storage_uri, content_sha256,
+                latitude, longitude, days_ago, source
+              )
+              WHERE EXISTS (
+                SELECT 1 FROM claims c
+                WHERE c.id = v.claim_id::uuid
+                  AND c.deleted = false
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM claim_evidence e
+                WHERE e.id = v.id::uuid
+                   OR (
+                     e.claim_id = v.claim_id::uuid
+                     AND e.title = v.title
+                     AND e.deleted = false
+                   )
+              );

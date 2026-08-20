@@ -1,0 +1,482 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-workflow-definitions
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: workflow_definitions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: description
+                  type: varchar(2000)
+              - column:
+                  name: published_version_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_workflow_definitions_code_active ON workflow_definitions (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 012-workflow-definition-versions
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: workflow_definition_versions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: definition_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: version_no
+                  type: int
+                  constraints: { nullable: false }
+              - column:
+                  name: graph_json
+                  type: text
+                  constraints: { nullable: false }
+              - column:
+                  name: published_at
+                  type: timestamptz
+              - column:
+                  name: published_by
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_def_versions_definition
+            baseTableName: workflow_definition_versions
+            baseColumnNames: definition_id
+            referencedTableName: workflow_definitions
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_workflow_def_versions_no_active ON workflow_definition_versions (definition_id, version_no) WHERE deleted = false;
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_definitions_published_version
+            baseTableName: workflow_definitions
+            baseColumnNames: published_version_id
+            referencedTableName: workflow_definition_versions
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 012-workflow-instances
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: workflow_instances
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: definition_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: definition_version_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: subject_type
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: subject_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: current_step_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: correlation_id
+                  type: varchar(128)
+              - column:
+                  name: payload_json
+                  type: text
+              - column:
+                  name: started_at
+                  type: timestamptz
+              - column:
+                  name: completed_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_instances_definition
+            baseTableName: workflow_instances
+            baseColumnNames: definition_id
+            referencedTableName: workflow_definitions
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_instances_version
+            baseTableName: workflow_instances
+            baseColumnNames: definition_version_id
+            referencedTableName: workflow_definition_versions
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_workflow_instances_subject
+            tableName: workflow_instances
+            columns:
+              - column:
+                  name: subject_type
+              - column:
+                  name: subject_id
+        - createIndex:
+            indexName: idx_workflow_instances_status
+            tableName: workflow_instances
+            columns:
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 012-workflow-steps
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: workflow_steps
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: instance_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: step_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: step_name
+                  type: varchar(255)
+              - column:
+                  name: entered_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: exited_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_steps_instance
+            baseTableName: workflow_steps
+            baseColumnNames: instance_id
+            referencedTableName: workflow_instances
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_workflow_steps_instance
+            tableName: workflow_steps
+            columns:
+              - column:
+                  name: instance_id
+
+  - changeSet:
+      id: 012-workflow-transitions
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: workflow_transitions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: instance_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: from_step_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: to_step_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: action_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: actor_id
+                  type: uuid
+              - column:
+                  name: reason
+                  type: varchar(1000)
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_transitions_instance
+            baseTableName: workflow_transitions
+            baseColumnNames: instance_id
+            referencedTableName: workflow_instances
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_workflow_transitions_instance
+            tableName: workflow_transitions
+            columns:
+              - column:
+                  name: instance_id
+
+  - changeSet:
+      id: 012-workflow-events
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: workflow_events
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: instance_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: from_step_code
+                  type: varchar(64)
+              - column:
+                  name: to_step_code
+                  type: varchar(64)
+              - column:
+                  name: action_code
+                  type: varchar(64)
+              - column:
+                  name: actor_id
+                  type: uuid
+              - column:
+                  name: message
+                  type: varchar(2000)
+              - column:
+                  name: payload_json
+                  type: text
+              - column:
+                  name: occurred_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_workflow_events_instance
+            baseTableName: workflow_events
+            baseColumnNames: instance_id
+            referencedTableName: workflow_instances
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_workflow_events_instance_time
+            tableName: workflow_events
+            columns:
+              - column:
+                  name: instance_id
+              - column:
+                  name: occurred_at
+
+  - changeSet:
+      id: 012-workflow-permissions
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220040', 'workflows:read', 'Read workflows', 'workflows', 'read', 'View workflow definitions and instances', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'workflows:read' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220041', 'workflows:write', 'Write workflows', 'workflows', 'write', 'Start and transition workflow instances', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'workflows:write' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT '22222222-2222-2222-2222-222222220042', 'workflows:admin', 'Admin workflows', 'workflows', 'admin', 'Create and publish workflow definitions', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'workflows:admin' AND deleted = false);
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111001', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('workflows:read', 'workflows:write', 'workflows:admin') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111001' AND rp.permission_id = p.id AND rp.deleted = false
+                );

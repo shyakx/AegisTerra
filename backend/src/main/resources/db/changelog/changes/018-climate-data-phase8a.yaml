@@ -1,0 +1,402 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-weather-stations-alter
+      author: aegisterra
+      changes:
+        - addColumn:
+            tableName: weather_stations
+            columns:
+              - column: { name: provider_code, type: "varchar(64)" }
+              - column: { name: external_station_id, type: "varchar(128)" }
+              - column: { name: district_code, type: "varchar(64)" }
+        - createIndex:
+            indexName: idx_weather_stations_provider
+            tableName: weather_stations
+            columns:
+              - column: { name: provider_code }
+        - createIndex:
+            indexName: idx_weather_stations_district
+            tableName: weather_stations
+            columns:
+              - column: { name: district_code }
+
+  - changeSet:
+      id: 018-weather-observations-alter
+      author: aegisterra
+      comment: Long-format columns; keep wide columns for dual-write
+      changes:
+        - addColumn:
+            tableName: weather_observations
+            columns:
+              - column: { name: variable_code, type: "varchar(64)" }
+              - column: { name: value, type: "numeric(18,6)" }
+              - column: { name: unit, type: "varchar(32)" }
+              - column: { name: quality_flag, type: "varchar(32)", defaultValue: RAW }
+              - column: { name: provider_code, type: "varchar(64)" }
+              - column: { name: import_job_id, type: uuid }
+              - column: { name: source_payload_hash, type: "varchar(128)" }
+        - createIndex:
+            indexName: idx_weather_obs_variable_time
+            tableName: weather_observations
+            columns:
+              - column: { name: station_id }
+              - column: { name: variable_code }
+              - column: { name: observed_at }
+        - createIndex:
+            indexName: idx_weather_obs_provider_time
+            tableName: weather_observations
+            columns:
+              - column: { name: provider_code }
+              - column: { name: observed_at }
+        - createIndex:
+            indexName: idx_weather_obs_import_job
+            tableName: weather_observations
+            columns:
+              - column: { name: import_job_id }
+        - createIndex:
+            indexName: idx_weather_obs_quality
+            tableName: weather_observations
+            columns:
+              - column: { name: quality_flag }
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX uk_weather_obs_dedup
+              ON weather_observations (station_id, observed_at, variable_code, source_payload_hash)
+              WHERE variable_code IS NOT NULL AND source_payload_hash IS NOT NULL;
+
+  - changeSet:
+      id: 018-satellite-observations-alter
+      author: aegisterra
+      changes:
+        - addColumn:
+            tableName: satellite_observations
+            columns:
+              - column: { name: provider_code, type: "varchar(64)" }
+              - column: { name: external_id, type: "varchar(255)" }
+              - column: { name: quality_flag, type: "varchar(32)", defaultValue: RAW }
+              - column: { name: import_job_id, type: uuid }
+              - column: { name: dataset_id, type: uuid }
+              - column: { name: acquired_at, type: timestamptz }
+        - createIndex:
+            indexName: idx_satellite_obs_provider
+            tableName: satellite_observations
+            columns:
+              - column: { name: provider_code }
+        - createIndex:
+            indexName: idx_satellite_obs_dataset
+            tableName: satellite_observations
+            columns:
+              - column: { name: dataset_id }
+
+  - changeSet:
+      id: 018-climate-providers
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_providers
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: display_name, type: "varchar(150)", constraints: { nullable: false } }
+              - column: { name: enabled, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: capabilities_json, type: text }
+              - column: { name: config_json, type: text }
+              - column: { name: timezone_default, type: "varchar(64)" }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_climate_providers_code_active ON climate_providers (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 018-climate-datasets
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_datasets
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: name, type: "varchar(255)", constraints: { nullable: false } }
+              - column: { name: description, type: "varchar(2000)" }
+              - column: { name: dataset_type, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: time_start, type: timestamptz }
+              - column: { name: time_end, type: timestamptz }
+              - column: { name: bbox, type: "geometry(Polygon,4326)" }
+              - column: { name: provider_code, type: "varchar(64)" }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_climate_datasets_code_active ON climate_datasets (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 018-climate-import-jobs
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_import_jobs
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: job_number, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: provider_code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: job_type, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: requested_window_start, type: timestamptz }
+              - column: { name: requested_window_end, type: timestamptz }
+              - column: { name: params_json, type: text }
+              - column: { name: rows_read, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: rows_accepted, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: rows_rejected, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: started_at, type: timestamptz }
+              - column: { name: completed_at, type: timestamptz }
+              - column: { name: error_summary, type: "varchar(2000)" }
+              - column: { name: dataset_id, type: uuid }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_climate_import_jobs_number_active ON climate_import_jobs (job_number) WHERE deleted = false;
+        - createIndex:
+            indexName: idx_climate_import_jobs_provider
+            tableName: climate_import_jobs
+            columns:
+              - column: { name: provider_code }
+        - createIndex:
+            indexName: idx_climate_import_jobs_status
+            tableName: climate_import_jobs
+            columns:
+              - column: { name: status }
+
+  - changeSet:
+      id: 018-climate-validation-results
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_validation_results
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: import_job_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: subject_type, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: subject_id, type: uuid }
+              - column: { name: rule_code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: severity, type: "varchar(16)", constraints: { nullable: false } }
+              - column: { name: message, type: "varchar(2000)" }
+              - column: { name: occurred_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+        - addForeignKeyConstraint:
+            constraintName: fk_climate_validation_import_job
+            baseTableName: climate_validation_results
+            baseColumnNames: import_job_id
+            referencedTableName: climate_import_jobs
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_climate_validation_job
+            tableName: climate_validation_results
+            columns:
+              - column: { name: import_job_id }
+
+  - changeSet:
+      id: 018-climate-quality-reports
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_quality_reports
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: scope_type, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: scope_id, type: uuid }
+              - column: { name: period_start, type: timestamptz }
+              - column: { name: period_end, type: timestamptz }
+              - column: { name: metrics_json, type: text }
+              - column: { name: overall_grade, type: "varchar(8)" }
+              - column: { name: generated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - createIndex:
+            indexName: idx_climate_quality_scope
+            tableName: climate_quality_reports
+            columns:
+              - column: { name: scope_type }
+              - column: { name: scope_id }
+
+  - changeSet:
+      id: 018-climate-raster-layers
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_raster_layers
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: name, type: "varchar(255)", constraints: { nullable: false } }
+              - column: { name: provider_code, type: "varchar(64)" }
+              - column: { name: variable_code, type: "varchar(64)" }
+              - column: { name: crs, type: "varchar(32)", defaultValue: EPSG:4326 }
+              - column: { name: resolution_m, type: "numeric(12,4)" }
+              - column: { name: bbox, type: "geometry(Polygon,4326)" }
+              - column: { name: observed_at, type: timestamptz }
+              - column: { name: valid_from, type: timestamptz }
+              - column: { name: valid_to, type: timestamptz }
+              - column: { name: storage_uri, type: "varchar(1000)" }
+              - column: { name: format, type: "varchar(32)" }
+              - column: { name: checksum, type: "varchar(128)" }
+              - column: { name: byte_size, type: bigint }
+              - column: { name: dataset_id, type: uuid }
+              - column: { name: import_job_id, type: uuid }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+              - column: { name: updated_by, type: uuid }
+              - column: { name: version, type: bigint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(32)", constraints: { nullable: false } }
+              - column: { name: deleted, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_climate_raster_layers_code_active ON climate_raster_layers (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 018-climate-observation-aggregates
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: climate_observation_aggregates
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: station_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: variable_code, type: "varchar(64)", constraints: { nullable: false } }
+              - column: { name: period_type, type: "varchar(16)", constraints: { nullable: false } }
+              - column: { name: period_start, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: period_end, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: avg_value, type: "numeric(18,6)" }
+              - column: { name: min_value, type: "numeric(18,6)" }
+              - column: { name: max_value, type: "numeric(18,6)" }
+              - column: { name: sum_value, type: "numeric(18,6)" }
+              - column: { name: sample_count, type: int, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: unit, type: "varchar(32)" }
+              - column: { name: source, type: "varchar(64)", defaultValue: AGGREGATOR }
+              - column: { name: job_id, type: uuid }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: created_by, type: uuid }
+        - addForeignKeyConstraint:
+            constraintName: fk_climate_aggregates_station
+            baseTableName: climate_observation_aggregates
+            baseColumnNames: station_id
+            referencedTableName: weather_stations
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_climate_aggregates_station_period
+            tableName: climate_observation_aggregates
+            columns:
+              - column: { name: station_id }
+              - column: { name: variable_code }
+              - column: { name: period_start }
+
+  - changeSet:
+      id: 018-climate-provider-seed
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc001', 'MANUAL', 'Manual / CSV Import', TRUE, '["STATION_OBS"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'MANUAL' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc002', 'NATIONAL_MET', 'National Meteorological Service (stub)', FALSE, '["STATION_OBS"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'NATIONAL_MET' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc003', 'OPENWEATHER', 'OpenWeather (stub)', FALSE, '["STATION_OBS","GRID"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'OPENWEATHER' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc004', 'TOMORROW_IO', 'Tomorrow.io (stub)', FALSE, '["STATION_OBS","GRID"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'TOMORROW_IO' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc005', 'NASA', 'NASA (stub)', FALSE, '["SATELLITE","RASTER"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'NASA' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc006', 'COPERNICUS', 'Copernicus (stub)', FALSE, '["SATELLITE","RASTER"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'COPERNICUS' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc007', 'SENTINEL', 'Sentinel (stub)', FALSE, '["SATELLITE"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'SENTINEL' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc008', 'PLANET', 'Planet (stub)', FALSE, '["SATELLITE"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'PLANET' AND deleted = false);
+              INSERT INTO climate_providers (id, code, display_name, enabled, capabilities_json, config_json, timezone_default, created_at, updated_at, version, status, deleted)
+              SELECT 'cccccccc-cccc-cccc-cccc-ccccccccc009', 'NOAA', 'NOAA (stub)', FALSE, '["STATION_OBS","GRID"]', '{}', 'UTC', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'INACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM climate_providers WHERE code = 'NOAA' AND deleted = false);
+
+  - changeSet:
+      id: 018-climate-permissions
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000090', 'climate:read', 'Read climate data', 'climate', 'read', 'View climate stations and observations', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'climate:read' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000091', 'climate:write', 'Write climate data', 'climate', 'write', 'Create/update climate catalog', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'climate:write' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000092', 'climate:import', 'Import climate data', 'climate', 'import', 'Run climate import jobs', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'climate:import' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000093', 'climate:admin', 'Admin climate data', 'climate', 'admin', 'Climate platform administration', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'climate:admin' AND deleted = false);
+              INSERT INTO permissions (id, code, name, resource, action, description, created_at, updated_at, version, status, deleted)
+              SELECT 'aaaaaaaa-bbbb-cccc-dddd-000000000094', 'reports:climate', 'Climate reports', 'reports', 'climate', 'Climate data reporting', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'reports:climate' AND deleted = false);
+
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111001', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('climate:read','climate:write','climate:import','climate:admin','reports:climate') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111001' AND rp.permission_id = p.id AND rp.deleted = false
+                );
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111005', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('climate:read','reports:climate') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111005' AND rp.permission_id = p.id AND rp.deleted = false
+                );
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111008', p.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.code IN ('climate:read','reports:climate') AND p.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions rp
+                  WHERE rp.role_id = '11111111-1111-1111-1111-111111111008' AND rp.permission_id = p.id AND rp.deleted = false
+                );
+
+  - changeSet:
+      id: 018-climate-demo-seed
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO weather_stations (id, code, name, geom, elevation_m, provider_code, external_station_id, district_code, created_at, updated_at, version, status, deleted)
+              SELECT 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb001', 'DEMO-KGL-01', 'Kigali Demo Station',
+                     ST_SetSRID(ST_MakePoint(30.0619, -1.9441), 4326), 1490.00, 'MANUAL', 'DEMO-1', 'KIGALI',
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              WHERE NOT EXISTS (SELECT 1 FROM weather_stations WHERE code = 'DEMO-KGL-01' AND deleted = false);

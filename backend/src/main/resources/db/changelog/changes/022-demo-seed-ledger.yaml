@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-demo-seed-ledger-set-rc1-2026-001
+      author: aegisterra
+      comment: >
+        Demo ledger transaction + balanced debit/credit entries for completed settlement
+        SET-RC1-2026-001 (mirrors LedgerService.postSettlementCompletion conventions).
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO ledger_transactions (
+                id, transaction_number, settlement_id, transaction_type, description,
+                currency, correlation_id, posted_at, created_at, updated_at,
+                created_by, updated_by, version, status, deleted
+              )
+              SELECT
+                'ffffffff-ffff-ffff-ffff-ffffffffff01'::uuid,
+                'LTX-RC1-2026-000000001',
+                s.id,
+                'DISBURSEMENT',
+                'Settlement completion for ' || s.settlement_number,
+                s.currency,
+                'demo-settlement-801',
+                COALESCE(s.completed_at, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP,
+                NULL,
+                NULL,
+                0,
+                'POSTED',
+                FALSE
+              FROM settlements s
+              WHERE s.settlement_number = 'SET-RC1-2026-001'
+                AND s.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM ledger_transactions lt
+                  WHERE lt.settlement_id = s.id
+                    AND lt.deleted = false
+                );
+
+              INSERT INTO ledger_entries (
+                id, ledger_transaction_id, settlement_id, entry_no, entry_type,
+                account_code, amount, currency, narration,
+                external_statement_line_id, reconciliation_ref, posted_at,
+                created_at, updated_at, created_by, updated_by, version, status, deleted
+              )
+              SELECT
+                v.id::uuid,
+                lt.id,
+                s.id,
+                v.entry_no,
+                v.entry_type,
+                v.account_code,
+                s.amount,
+                s.currency,
+                v.narration,
+                NULL,
+                NULL,
+                lt.posted_at,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP,
+                NULL,
+                NULL,
+                0,
+                'POSTED',
+                FALSE
+              FROM settlements s
+              JOIN ledger_transactions lt
+                ON lt.settlement_id = s.id
+               AND lt.transaction_number = 'LTX-RC1-2026-000000001'
+               AND lt.deleted = false
+              CROSS JOIN (VALUES
+                (
+                  'ffffffff-ffff-ffff-ffff-ffffffffff11',
+                  1,
+                  'DEBIT',
+                  'PAYABLE.CLAIMS',
+                  'Debit payable for SET-RC1-2026-001'
+                ),
+                (
+                  'ffffffff-ffff-ffff-ffff-ffffffffff12',
+                  2,
+                  'CREDIT',
+                  'CASH.MANUAL',
+                  'Credit cash for SET-RC1-2026-001'
+                )
+              ) AS v(id, entry_no, entry_type, account_code, narration)
+              WHERE s.settlement_number = 'SET-RC1-2026-001'
+                AND s.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM ledger_entries le
+                  WHERE le.id = v.id::uuid
+                     OR (
+                       le.settlement_id = s.id
+                       AND le.entry_no = v.entry_no
+                       AND le.deleted = false
+                     )
+                );

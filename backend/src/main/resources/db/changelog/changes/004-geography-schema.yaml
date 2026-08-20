@@ -1,0 +1,250 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-districts
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: districts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: code
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(150)
+                  constraints: { nullable: false }
+              - column:
+                  name: geom
+                  type: geometry(MultiPolygon,4326)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_districts_code_active ON districts (code) WHERE deleted = false;
+        - sql:
+            sql: CREATE INDEX idx_districts_geom ON districts USING GIST (geom);
+
+  - changeSet:
+      id: 004-sectors
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: sectors
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: district_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: code
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(150)
+                  constraints: { nullable: false }
+              - column:
+                  name: geom
+                  type: geometry(MultiPolygon,4326)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_sectors_district
+            baseTableName: sectors
+            baseColumnNames: district_id
+            referencedTableName: districts
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_sectors_district_code_active ON sectors (district_id, code) WHERE deleted = false;
+        - sql:
+            sql: CREATE INDEX idx_sectors_geom ON sectors USING GIST (geom);
+
+  - changeSet:
+      id: 004-cells
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: cells
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: sector_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: code
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(150)
+                  constraints: { nullable: false }
+              - column:
+                  name: geom
+                  type: geometry(MultiPolygon,4326)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_cells_sector
+            baseTableName: cells
+            baseColumnNames: sector_id
+            referencedTableName: sectors
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_cells_sector_code_active ON cells (sector_id, code) WHERE deleted = false;
+        - sql:
+            sql: CREATE INDEX idx_cells_geom ON cells USING GIST (geom);
+
+  - changeSet:
+      id: 004-villages
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: villages
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: cell_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: code
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: varchar(150)
+                  constraints: { nullable: false }
+              - column:
+                  name: geom
+                  type: geometry(MultiPolygon,4326)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_villages_cell
+            baseTableName: villages
+            baseColumnNames: cell_id
+            referencedTableName: cells
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_villages_cell_code_active ON villages (cell_id, code) WHERE deleted = false;
+        - sql:
+            sql: CREATE INDEX idx_villages_geom ON villages USING GIST (geom);

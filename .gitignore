@@ -1,0 +1,22 @@
+# Dependencies and build output
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+backend/target/
+
+# Local environment (keep committed examples)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+hs_err_pid*

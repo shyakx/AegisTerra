@@ -1,0 +1,625 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-households
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: households
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: head_name
+                  type: varchar(255)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_households_code_active ON households (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 006-farmers
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: farmers
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: household_id
+                  type: uuid
+              - column:
+                  name: user_id
+                  type: uuid
+              - column:
+                  name: aggregator_id
+                  type: uuid
+              - column:
+                  name: partner_id
+                  type: uuid
+              - column:
+                  name: first_name
+                  type: varchar(100)
+                  constraints: { nullable: false }
+              - column:
+                  name: last_name
+                  type: varchar(100)
+                  constraints: { nullable: false }
+              - column:
+                  name: national_id
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: phone_number
+                  type: varchar(50)
+                  constraints: { nullable: false }
+              - column:
+                  name: email
+                  type: varchar(255)
+              - column:
+                  name: district_id
+                  type: uuid
+              - column:
+                  name: sector_id
+                  type: uuid
+              - column:
+                  name: cell_id
+                  type: uuid
+              - column:
+                  name: village_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_farmers_household
+            baseTableName: farmers
+            baseColumnNames: household_id
+            referencedTableName: households
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_farmers_user
+            baseTableName: farmers
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_farmers_aggregator
+            baseTableName: farmers
+            baseColumnNames: aggregator_id
+            referencedTableName: aggregators
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_farmers_partner
+            baseTableName: farmers
+            baseColumnNames: partner_id
+            referencedTableName: partners
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_farmers_district
+            baseTableName: farmers
+            baseColumnNames: district_id
+            referencedTableName: districts
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_farmers_status
+            tableName: farmers
+            columns: [{ name: status }]
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_farmers_national_id_active ON farmers (national_id) WHERE deleted = false;
+
+  - changeSet:
+      id: 006-farms
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: farms
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: farmer_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: farm_code
+                  type: varchar(64)
+                  constraints: { nullable: false }
+              - column:
+                  name: farm_name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: farm_size_ha
+                  type: numeric(19,4)
+              - column:
+                  name: crop_type
+                  type: varchar(100)
+              - column:
+                  name: district_id
+                  type: uuid
+              - column:
+                  name: sector_id
+                  type: uuid
+              - column:
+                  name: cell_id
+                  type: uuid
+              - column:
+                  name: village_id
+                  type: uuid
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_farms_farmer
+            baseTableName: farms
+            baseColumnNames: farmer_id
+            referencedTableName: farmers
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_farms_farmer_id
+            tableName: farms
+            columns: [{ name: farmer_id }]
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_farms_code_active ON farms (farm_code) WHERE deleted = false;
+
+  - changeSet:
+      id: 006-farm-boundaries
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: farm_boundaries
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: farm_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: geom
+                  type: geometry(MultiPolygon,4326)
+              - column:
+                  name: source
+                  type: varchar(64)
+              - column:
+                  name: captured_at
+                  type: timestamptz
+              - column:
+                  name: area_ha
+                  type: numeric(19,4)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_farm_boundaries_farm
+            baseTableName: farm_boundaries
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_farm_boundaries_farm_id
+            tableName: farm_boundaries
+            columns: [{ name: farm_id }]
+        - sql:
+            sql: CREATE INDEX idx_farm_boundaries_geom ON farm_boundaries USING GIST (geom);
+
+  - changeSet:
+      id: 006-plots
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: plots
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: farm_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: plot_code
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(150)
+              - column:
+                  name: geom
+                  type: geometry(MultiPolygon,4326)
+              - column:
+                  name: area_ha
+                  type: numeric(19,4)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_plots_farm
+            baseTableName: plots
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_plots_farm_code_active ON plots (farm_id, plot_code) WHERE deleted = false;
+        - sql:
+            sql: CREATE INDEX idx_plots_geom ON plots USING GIST (geom);
+
+  - changeSet:
+      id: 006-crops
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: crops
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scientific_name
+                  type: varchar(255)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_crops_code_active ON crops (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 006-seasons
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: seasons
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_date
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_seasons_code_active ON seasons (code) WHERE deleted = false;
+
+  - changeSet:
+      id: 006-crop-seasons
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: crop_seasons
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: farm_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: plot_id
+                  type: uuid
+              - column:
+                  name: crop_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: season_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: planted_area_ha
+                  type: numeric(19,4)
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_crop_seasons_farm
+            baseTableName: crop_seasons
+            baseColumnNames: farm_id
+            referencedTableName: farms
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_crop_seasons_plot
+            baseTableName: crop_seasons
+            baseColumnNames: plot_id
+            referencedTableName: plots
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_crop_seasons_crop
+            baseTableName: crop_seasons
+            baseColumnNames: crop_id
+            referencedTableName: crops
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_crop_seasons_season
+            baseTableName: crop_seasons
+            baseColumnNames: season_id
+            referencedTableName: seasons
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_crop_seasons_farm
+            tableName: crop_seasons
+            columns:
+              - column:
+                  name: farm_id
+              - column:
+                  name: status

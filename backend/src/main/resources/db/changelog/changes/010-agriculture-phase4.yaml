@@ -1,0 +1,147 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-farmer-code
+      author: aegisterra
+      changes:
+        - addColumn:
+            tableName: farmers
+            columns:
+              - column:
+                  name: farmer_code
+                  type: varchar(64)
+        - sql:
+            sql: |
+              UPDATE farmers SET farmer_code = 'FRM-' || UPPER(SUBSTRING(REPLACE(id::text, '-', ''), 1, 10))
+              WHERE farmer_code IS NULL;
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_farmers_farmer_code_active ON farmers (farmer_code) WHERE deleted = false AND farmer_code IS NOT NULL;
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_farmers_phone_active ON farmers (phone_number) WHERE deleted = false;
+        - sql:
+            sql: CREATE UNIQUE INDEX uk_farmers_email_active ON farmers (email) WHERE deleted = false AND email IS NOT NULL;
+
+  - changeSet:
+      id: 010-registration-drafts
+      author: aegisterra
+      changes:
+        - createTable:
+            tableName: registration_drafts
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: created_by_user_id
+                  type: uuid
+                  constraints: { nullable: false }
+              - column:
+                  name: farmer_id
+                  type: uuid
+              - column:
+                  name: current_step
+                  type: int
+                  constraints: { nullable: false }
+              - column:
+                  name: payload_json
+                  type: text
+                  constraints: { nullable: false }
+              - column:
+                  name: expires_at
+                  type: timestamptz
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamptz
+                  constraints: { nullable: false }
+              - column:
+                  name: created_by
+                  type: uuid
+              - column:
+                  name: updated_by
+                  type: uuid
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: varchar(32)
+                  constraints: { nullable: false }
+              - column:
+                  name: deleted
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_registration_drafts_user
+            baseTableName: registration_drafts
+            baseColumnNames: created_by_user_id
+            referencedTableName: users
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_registration_drafts_farmer
+            baseTableName: registration_drafts
+            baseColumnNames: farmer_id
+            referencedTableName: farmers
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_registration_drafts_user
+            tableName: registration_drafts
+            columns: [{ name: created_by_user_id }]
+
+  - changeSet:
+      id: 010-boundary-config
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO configurations (id, config_key, category, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'farm.boundary.min_area_ha', 'agriculture', '0.01', 'Minimum farm boundary area in hectares', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM configurations WHERE config_key = 'farm.boundary.min_area_ha' AND deleted = false);
+              INSERT INTO configurations (id, config_key, category, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'farm.boundary.max_area_ha', 'agriculture', '500', 'Maximum farm boundary area in hectares', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM configurations WHERE config_key = 'farm.boundary.max_area_ha' AND deleted = false);
+              INSERT INTO configurations (id, config_key, category, value_json, description, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), 'registration.draft.expiry_days', 'agriculture', '30', 'Registration draft expiry in days', NOW(), NOW(), 0, 'ACTIVE', false
+              WHERE NOT EXISTS (SELECT 1 FROM configurations WHERE config_key = 'registration.draft.expiry_days' AND deleted = false);
+
+  - changeSet:
+      id: 010-seed-crops
+      author: aegisterra
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO crops (id, code, name, scientific_name, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), v.code, v.name, v.sci, NOW(), NOW(), 0, 'ACTIVE', false
+              FROM (VALUES
+                ('MAIZE', 'Maize', 'Zea mays'),
+                ('BEANS', 'Beans', 'Phaseolus vulgaris'),
+                ('RICE', 'Rice', 'Oryza sativa'),
+                ('POTATO', 'Irish Potato', 'Solanum tuberosum'),
+                ('CASSAVA', 'Cassava', 'Manihot esculenta')
+              ) AS v(code, name, sci)
+              WHERE NOT EXISTS (SELECT 1 FROM crops c WHERE c.code = v.code AND c.deleted = false);
+
+  - changeSet:
+      id: 010-seed-seasons
+      author: aegisterra
+      comment: Rwanda agricultural seasons A/B/C for local + registration dropdowns
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO seasons (id, code, name, start_date, end_date, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), v.code, v.name, v.start_date::date, v.end_date::date, NOW(), NOW(), 0, v.status, false
+              FROM (VALUES
+                ('2025A', 'Season A 2025', '2024-09-01', '2025-02-28', 'CLOSED'),
+                ('2025B', 'Season B 2025', '2025-03-01', '2025-06-30', 'CLOSED'),
+                ('2025C', 'Season C 2025', '2025-07-01', '2025-08-31', 'CLOSED'),
+                ('2026A', 'Season A 2026', '2025-09-01', '2026-02-28', 'ACTIVE'),
+                ('2026B', 'Season B 2026', '2026-03-01', '2026-06-30', 'PLANNED'),
+                ('2026C', 'Season C 2026', '2026-07-01', '2026-08-31', 'PLANNED')
+              ) AS v(code, name, start_date, end_date, status)
+              WHERE NOT EXISTS (SELECT 1 FROM seasons s WHERE s.code = v.code AND s.deleted = false);

@@ -1,0 +1,21 @@
+# Test profile — datasource URL overridden by Testcontainers (SharedPostgresContainer).
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+aegisterra:
+  security:
+    bootstrap:
+      enabled: true
+      admin-password: Admin@1234!Aa
+      demo-users-enabled: true
+      demo-users-password: Demo@1234!Aa
+    cookie:
+      secure: false
+    jwt:
+      access-token-minutes: 15
+      refresh-token-days: 7

@@ -1,0 +1,12 @@
+package com.aegisterra.platform.infrastructure.persistence.workflow;
+
+import java.util.List;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface DecisionRuleRepository extends JpaRepository<DecisionRuleEntity, UUID> {
+    List<DecisionRuleEntity> findByDecisionTypeCodeAndDeletedFalseAndStatusOrderByPriorityDesc(
+        String decisionTypeCode,
+        String status
+    );
+}
