@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: aegisterra
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: AEGISTERRA_DB_URL
+        fromDatabase:
+          name: aegisterra-db
+          property: connectionString
+      - key: AEGISTERRA_JWT_SECRET
+        generateValue: true
+      - key: AEGISTERRA_SECURITY_BOOTSTRAP_ENABLED
+        value: "true"
+      - key: AEGISTERRA_SECURITY_BOOTSTRAP_DEMO_USERS_ENABLED
+        value: "true"
+      - key: AEGISTERRA_BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: AEGISTERRA_DEMO_USERS_PASSWORD
+        sync: false
+      - key: JAVA_OPTS
+        value: "-Xms256m -Xmx512m"
+
+databases:
+  - name: aegisterra-db
+    plan: basic-256mb
+    postgresMajorVersion: 16
+    region: frankfurt
+    databaseName: aegisterra
+    user: aegisterra

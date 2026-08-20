@@ -4,14 +4,25 @@ spring:
     username: ${AEGISTERRA_DB_USER}
     password: ${AEGISTERRA_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
 
 aegisterra:
   security:
     bootstrap:
-      enabled: false
+      enabled: ${AEGISTERRA_SECURITY_BOOTSTRAP_ENABLED:true}
+      admin-password: ${AEGISTERRA_BOOTSTRAP_ADMIN_PASSWORD:}
+      demo-users-enabled: ${AEGISTERRA_SECURITY_BOOTSTRAP_DEMO_USERS_ENABLED:true}
+      demo-users-password: ${AEGISTERRA_DEMO_USERS_PASSWORD:}
     cookie:
-      secure: true
-      same-site: Strict
+      secure: ${AEGISTERRA_SECURITY_COOKIE_SECURE:true}
+      same-site: Lax
     jwt:
       secret: ${AEGISTERRA_JWT_SECRET}
 

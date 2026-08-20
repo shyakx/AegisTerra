@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: aegisterra
+      POSTGRES_USER: aegisterra
+      POSTGRES_PASSWORD: ${AEGISTERRA_DB_PASSWORD:-aegisterra}
+    volumes:
+      - aegisterra_prod_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegisterra -d aegisterra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${PORT:-80}:80"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      PORT: 80
+      AEGISTERRA_DB_URL: jdbc:postgresql://db:5432/aegisterra
+      AEGISTERRA_DB_USER: aegisterra
+      AEGISTERRA_DB_PASSWORD: ${AEGISTERRA_DB_PASSWORD:-aegisterra}
+      AEGISTERRA_JWT_SECRET: ${AEGISTERRA_JWT_SECRET:-competition-change-me-aegisterra-jwt-secret-32b}
+      AEGISTERRA_SECURITY_BOOTSTRAP_ENABLED: "true"
+      AEGISTERRA_SECURITY_BOOTSTRAP_DEMO_USERS_ENABLED: "true"
+      AEGISTERRA_BOOTSTRAP_ADMIN_PASSWORD: ${AEGISTERRA_BOOTSTRAP_ADMIN_PASSWORD:-Admin@1234!Aa}
+      AEGISTERRA_DEMO_USERS_PASSWORD: ${AEGISTERRA_DEMO_USERS_PASSWORD:-Demo@1234!Aa}
+      AEGISTERRA_SECURITY_COOKIE_SECURE: "false"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+volumes:
+  aegisterra_prod_pgdata:
