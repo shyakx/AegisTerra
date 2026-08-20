@@ -1,16 +1,10 @@
+import { handleDemoRequest } from '../demo/handleDemoRequest';
+import { isStaticHostMode } from '../demo/mode';
+import { ApiError } from './errors';
+
+export { ApiError } from './errors';
+
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
-
-export class ApiError extends Error {
-  readonly status: number;
-  readonly body: unknown;
-
-  constructor(status: number, message: string, body?: unknown) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.body = body;
-  }
-}
 
 export type ApiClientOptions = RequestInit & {
   skipAuthRetry?: boolean;
@@ -59,6 +53,12 @@ async function tryRefresh(): Promise<boolean> {
  * Never stores JWTs in localStorage.
  */
 export async function apiClient<T>(path: string, options: ApiClientOptions = {}): Promise<T> {
+  if (isStaticHostMode()) {
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const result = await handleDemoRequest(path, options.method ?? 'GET', options.body as string | undefined);
+    return result as T;
+  }
+
   const { skipAuthRetry, headers: initHeaders, ...rest } = options;
   const headers = new Headers(initHeaders);
 

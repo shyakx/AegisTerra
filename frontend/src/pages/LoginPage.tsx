@@ -2,6 +2,8 @@ import { FormEvent, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { OPERATORS } from '../demo/catalog';
+import { isStaticHostMode } from '../demo/mode';
 import { roleLandingPath } from '../navigation/roleLanding';
 
 export default function LoginPage() {
@@ -165,6 +167,28 @@ export default function LoginPage() {
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
+
+          {isStaticHostMode() ? (
+            <div className="mt-6">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-textSecondary">Sign in as</p>
+              <div className="grid grid-cols-2 gap-2">
+                {OPERATORS.map((account) => (
+                  <button
+                    key={account.username}
+                    type="button"
+                    className="rounded-xl border border-border px-3 py-2 text-left text-xs hover:border-primary"
+                    onClick={() => {
+                      setUsername(account.username);
+                      setPassword(account.password);
+                    }}
+                  >
+                    <span className="block font-semibold text-textPrimary">{account.label}</span>
+                    <span className="text-textSecondary">{account.username}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <p className="mt-6 text-xs text-textSecondary">
             Authorized personnel only. Session cookies are HttpOnly; credentials are never stored in localStorage.
