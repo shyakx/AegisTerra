@@ -21,7 +21,9 @@ const STATUS_TONES: Record<string, string> = {
   ACKNOWLEDGED: 'bg-sky-50 text-info',
   RESOLVED: 'bg-emerald-50 text-success',
   PROCESSING: 'bg-sky-50 text-info',
-  PARTIAL: 'bg-amber-50 text-warning'
+  PARTIAL: 'bg-amber-50 text-warning',
+  ENABLED: 'bg-emerald-50 text-success',
+  STUB: 'bg-slate-100 text-textSecondary'
 };
 
 export function StatusBadge({ status }: { status: string | null | undefined }) {

@@ -5,6 +5,8 @@ import { agriApi, downloadCsv, type Farmer } from '../api/agriculture';
 import { EnterpriseTable } from '../components/EnterpriseTable';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { PHOTOS } from '../media/photos';
+import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
 export default function FarmersPage() {
   const { hasPermission, hasRole, user } = useAuth();
@@ -30,26 +32,29 @@ export default function FarmersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-textSecondary">{isFarmer ? 'Farmer portal' : 'Agricultural core'}</p>
-          <h1 className="text-3xl font-semibold">{isFarmer ? 'My profile' : 'Farmers'}</h1>
-        </div>
-        {hasPermission('farmers:write') ? (
-          <Link
-            to="/farmers/register"
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-          >
-            Register farmer
-          </Link>
-        ) : null}
-      </div>
+      <WorkspaceBanner
+        photo={PHOTOS.farmerField}
+        eyebrow={isFarmer ? 'My records' : 'Agricultural core'}
+        title={isFarmer ? 'My profile' : 'Farmers'}
+        description={
+          isFarmer
+            ? 'Your registered profile, farms, and partner cover.'
+            : 'A verified record of smallholders used by aggregators, insurers, and lenders.'
+        }
+        actions={
+          hasPermission('farmers:write') ? (
+            <Link to="/farmers/register" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
+              Register farmer
+            </Link>
+          ) : undefined
+        }
+      />
 
       <EnterpriseTable<Farmer>
         title={isFarmer ? 'My farmer record' : 'Farmer registry'}
         subtitle={
           isFarmer
-            ? 'Your linked farmer profile (subject-scoped)'
+            ? 'Your farmer profile'
             : 'Search by name, national ID, phone, or farmer code'
         }
         rows={query.data?.content ?? []}

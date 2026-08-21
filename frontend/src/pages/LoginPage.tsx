@@ -1,14 +1,20 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { OPERATORS } from '../demo/catalog';
 import { isStaticHostMode } from '../demo/mode';
 import { roleLandingPath } from '../navigation/roleLanding';
+import { PHOTOS } from '../media/photos';
+import { SignalBackdrop } from '../visuals/SignalBackdrop';
+import { easeOut } from '../motion/tokens';
+import { PoweredBy } from '../components/PoweredBy';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const reduce = useReducedMotion();
   const { login, isAuthenticated, loading: authLoading, user } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +22,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as { from?: string } | null)?.from;
+  const rawFrom = (location.state as { from?: string } | null)?.from;
+  const publicPaths = new Set(['/', '/about', '/platform', '/partners', '/join', '/login']);
+  const from = rawFrom && !publicPaths.has(rawFrom) ? rawFrom : undefined;
 
   if (!authLoading && isAuthenticated) {
     return <Navigate to={from || roleLandingPath(user?.roles)} replace />;
@@ -46,65 +54,39 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="relative flex min-h-screen items-center justify-center px-4 py-10"
-      style={{
-        background:
-          'radial-gradient(circle at 12% 18%, rgba(16,185,129,0.18), transparent 36%), radial-gradient(circle at 88% 12%, rgba(14,116,144,0.16), transparent 32%), linear-gradient(160deg, #ecfdf5 0%, #f8fafc 42%, #e2e8f0 100%)'
-      }}
-    >
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-border bg-surface shadow-lg lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="relative hidden bg-sidebar p-10 text-white lg:block">
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)',
-              backgroundSize: '42px 42px'
-            }}
-          />
-          <div className="relative z-10 flex h-full flex-col justify-between">
-            <div>
-              <img
-                src="/aegisterra-logo.png"
-                alt="AegisTerra"
-                className="h-16 w-auto object-contain"
-              />
-              <h1 className="mt-6 text-4xl font-semibold leading-tight">
-                National agricultural insurance operations
-              </h1>
-              <p className="mt-4 max-w-md text-sm text-emerald-50/85">
-                Secure access to farmer registry, policies, claims, settlements, and climate intelligence for
-                government and insurer partners.
-              </p>
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10">
+      <motion.div
+        className="relative mx-auto grid w-full max-w-5xl overflow-hidden rounded-3xl bg-surface lg:grid-cols-[1.1fr_0.9fr]"
+        initial={reduce ? false : { y: 24 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.4, ease: easeOut }}
+      >
+        <section className="relative hidden min-h-[560px] overflow-hidden lg:block">
+          <SignalBackdrop photo={PHOTOS.satellite} blend="panel" className="h-full min-h-[560px]">
+            <div className="flex h-full min-h-[560px] flex-col justify-between p-8 text-white">
+              <Link to="/" className="inline-flex w-fit rounded-xl bg-white px-2 py-1">
+                <img src="/aegisterra-logo.png" alt="AegisTerra" className="h-12 w-auto object-contain" />
+              </Link>
+              <div>
+                <h1 className="font-display text-4xl font-semibold leading-tight">
+                  Climate risk intelligence for agriculture
+                </h1>
+                <p className="mt-4 max-w-md text-sm text-emerald-50">
+                  AegisTerra does not sell insurance. Satellite, ground-station, and farm records sit behind one verified
+                  risk picture for partners.
+                </p>
+              </div>
             </div>
-            <ul className="space-y-2 text-sm text-emerald-100/90">
-              <li>• Enterprise RBAC and audit-ready workflows</li>
-              <li>• Climate-informed risk and settlement operations</li>
-              <li>• National coverage for farmers, insurers, and government</li>
-            </ul>
-          </div>
+          </SignalBackdrop>
         </section>
 
-        <section className="p-8 sm:p-10">
-          <div className="mb-8 lg:hidden">
-            <img
-              src="/aegisterra-logo.png"
-              alt="AegisTerra"
-              className="h-12 w-auto object-contain"
-            />
-            <h1 className="mt-3 text-2xl font-semibold text-textPrimary">Secure sign-in</h1>
-          </div>
-          <div className="mb-8 hidden lg:block">
-            <img
-              src="/aegisterra-logo.png"
-              alt="AegisTerra"
-              className="mb-4 h-12 w-auto object-contain"
-            />
-            <h2 className="text-2xl font-semibold text-textPrimary">Secure sign-in</h2>
-            <p className="mt-2 text-sm text-textSecondary">
-              Access the national agricultural insurance operations portal.
-            </p>
+        <section className="bg-surface p-8 sm:p-10 text-textPrimary">
+          <div className="mb-8">
+            <Link to="/" className="inline-flex rounded-xl bg-white px-2 py-1 lg:hidden">
+              <img src="/aegisterra-logo.png" alt="AegisTerra" className="h-12 w-auto object-contain" />
+            </Link>
+            <h2 className="font-display mt-4 text-3xl font-semibold">Secure sign-in</h2>
+            <p className="mt-2 text-sm text-textSecondary">Authorized operators enter the agricultural network.</p>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
@@ -116,7 +98,7 @@ export default function LoginPage() {
                 id="username"
                 name="username"
                 required
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"
+                className="w-full rounded-xl bg-background px-4 py-3"
                 value={username}
                 autoComplete="username"
                 onChange={(event) => setUsername(event.target.value)}
@@ -130,7 +112,7 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 required
-                className="w-full rounded-xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"
+                className="w-full rounded-xl bg-background px-4 py-3"
                 type="password"
                 value={password}
                 autoComplete="current-password"
@@ -148,7 +130,7 @@ export default function LoginPage() {
                 />
                 Remember me
               </label>
-              <Link className="text-sm font-medium text-primary hover:underline" to="/forgot-password">
+              <Link className="text-sm font-medium text-primary" to="/forgot-password">
                 Forgot password?
               </Link>
             </div>
@@ -160,41 +142,46 @@ export default function LoginPage() {
             ) : null}
 
             <button
-              className="w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white transition hover:bg-secondary disabled:opacity-60"
+              className="at-btn w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:opacity-60"
               type="submit"
               disabled={loading}
             >
-              {loading ? 'Signing in…' : 'Sign in'}
+              {loading ? 'Connecting…' : 'Enter workspace'}
             </button>
           </form>
 
           {isStaticHostMode() ? (
-            <div className="mt-6">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-textSecondary">Sign in as</p>
-              <div className="grid grid-cols-2 gap-2">
-                {OPERATORS.map((account) => (
-                  <button
-                    key={account.username}
-                    type="button"
-                    className="rounded-xl border border-border px-3 py-2 text-left text-xs hover:border-primary"
-                    onClick={() => {
-                      setUsername(account.username);
-                      setPassword(account.password);
-                    }}
-                  >
-                    <span className="block font-semibold text-textPrimary">{account.label}</span>
-                    <span className="text-textSecondary">{account.username}</span>
-                  </button>
-                ))}
-              </div>
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {OPERATORS.map((account) => (
+                <button
+                  key={account.username}
+                  type="button"
+                  className="rounded-xl bg-background px-3 py-2 text-left text-xs"
+                  onClick={() => {
+                    setUsername(account.username);
+                    setPassword(account.password);
+                  }}
+                >
+                  <span className="block font-semibold">{account.label}</span>
+                  <span className="text-textSecondary">{account.username}</span>
+                </button>
+              ))}
             </div>
           ) : null}
 
-          <p className="mt-6 text-xs text-textSecondary">
-            Authorized personnel only. Session cookies are HttpOnly; credentials are never stored in localStorage.
+          <p className="mt-6 text-center text-sm text-textSecondary">
+            New institution?{' '}
+            <Link className="font-semibold text-primary" to="/join">
+              Join the platform
+            </Link>
+            {' · '}
+            <Link className="font-semibold text-primary" to="/">
+              Back to home
+            </Link>
           </p>
         </section>
-      </div>
+      </motion.div>
+      <PoweredBy className="relative mt-6 text-center text-textSecondary" />
     </div>
   );
 }

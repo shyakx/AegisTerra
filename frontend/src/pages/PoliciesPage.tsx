@@ -5,6 +5,8 @@ import { insuranceApi, type Policy } from '../api/insurance';
 import { EnterpriseTable } from '../components/EnterpriseTable';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { PHOTOS } from '../media/photos';
+import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
 export default function PoliciesPage() {
   const { hasPermission, hasRole } = useAuth();
@@ -20,33 +22,36 @@ export default function PoliciesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-textSecondary">{isFarmer ? 'Farmer portal' : 'Insurance core'}</p>
-          <h1 className="text-3xl font-semibold">{isFarmer ? 'My policies' : 'Policies'}</h1>
-        </div>
-        {!isFarmer ? (
-          <div className="flex flex-wrap gap-2">
-            <Link to="/insurance/products" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-              Products
-            </Link>
-            <Link to="/insurance/calculator" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-              Premium calculator
-            </Link>
-            <Link to="/insurance/reports" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-              Reports
-            </Link>
-            {hasPermission('policies:write') ? (
-              <Link
-                to="/policies/issue"
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-              >
-                Issue policy
+      <WorkspaceBanner
+        photo={PHOTOS.operator}
+        eyebrow={isFarmer ? 'My records' : 'Insurance core'}
+        title={isFarmer ? 'My policies' : 'Policies'}
+        description={
+          isFarmer
+            ? 'Cover issued by partner insurers against your registered farms.'
+            : 'Partner products administered on climate-verified farm records. AegisTerra does not underwrite.'
+        }
+        actions={
+          !isFarmer ? (
+            <>
+              {hasPermission('policies:write') ? (
+                <Link to="/policies/issue" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
+                  Issue policy
+                </Link>
+              ) : null}
+              <Link to="/insurance/products" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+                Products
               </Link>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+              <Link to="/insurance/calculator" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+                Calculator
+              </Link>
+              <Link to="/insurance/reports" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+                Reports
+              </Link>
+            </>
+          ) : undefined
+        }
+      />
 
       <EnterpriseTable<Policy>
         title={isFarmer ? 'My cover' : 'Policy portfolio'}

@@ -11,16 +11,16 @@ type Props = {
 };
 
 const tones: Record<NonNullable<Props['tone']>, string> = {
-  default: 'bg-emerald-50 text-primary',
-  success: 'bg-emerald-50 text-success',
-  warning: 'bg-amber-50 text-warning',
-  danger: 'bg-red-50 text-danger',
-  info: 'bg-sky-50 text-info'
+  default: 'bg-primary text-white',
+  success: 'bg-success text-white',
+  warning: 'bg-warning text-white',
+  danger: 'bg-danger text-white',
+  info: 'bg-info text-white'
 };
 
 export function KpiCard({ label, value, detail, icon: Icon, to, tone = 'default' }: Props) {
   const body = (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/30">
+    <div className="rounded-2xl bg-surface p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-textSecondary">{label}</p>

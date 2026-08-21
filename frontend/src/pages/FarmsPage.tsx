@@ -5,6 +5,8 @@ import { agriApi, downloadCsv, type Farm } from '../api/agriculture';
 import { EnterpriseTable } from '../components/EnterpriseTable';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { PHOTOS } from '../media/photos';
+import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
 export default function FarmsPage() {
   const { hasRole } = useAuth();
@@ -18,10 +20,16 @@ export default function FarmsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-sm text-textSecondary">{isFarmer ? 'Farmer portal' : 'Agricultural core'}</p>
-        <h1 className="text-3xl font-semibold">{isFarmer ? 'My farms' : 'Farms'}</h1>
-      </div>
+      <WorkspaceBanner
+        photo={PHOTOS.cropsClose}
+        eyebrow={isFarmer ? 'My records' : 'Agricultural core'}
+        title={isFarmer ? 'My farms' : 'Farms'}
+        description={
+          isFarmer
+            ? 'Holdings linked to your farmer profile.'
+            : 'Plots, boundaries, and crop records on the same current as climate risk.'
+        }
+      />
       <EnterpriseTable<Farm>
         title={isFarmer ? 'My farms' : 'Farm registry'}
         rows={query.data?.content ?? []}

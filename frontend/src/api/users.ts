@@ -80,7 +80,10 @@ export const usersApi = {
   disable: (id: string) => apiClient<PlatformUser>(`/api/v1/users/${id}/disable`, { method: 'POST' }),
   enable: (id: string) => apiClient<PlatformUser>(`/api/v1/users/${id}/enable`, { method: 'POST' }),
   remove: (id: string) => apiClient<void>(`/api/v1/users/${id}`, { method: 'DELETE' }),
-  audit: (id: string) => apiClient<AuditLogEntry[]>(`/api/v1/users/${id}/audit`),
+  audit: async (id: string) => {
+    const data = await apiClient<AuditLogEntry[] | PageResponse<AuditLogEntry>>(`/api/v1/users/${id}/audit`);
+    return Array.isArray(data) ? data : (data?.content ?? []);
+  },
   listRoles: () => apiClient<RoleView[]>('/api/v1/roles'),
   listPermissions: () => apiClient<PermissionView[]>('/api/v1/permissions')
 };

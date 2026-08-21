@@ -1,8 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { climateApi } from '../api/climate';
+import { CloudRain, MapPinned, Radio, Upload } from 'lucide-react';
+import { climateApi, type ClimateImportJob } from '../api/climate';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { KpiCard } from '../components/KpiCard';
+import { StatusBadge } from '../components/StatusBadge';
+import { PHOTOS } from '../media/photos';
+import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
 export default function ClimateDashboardPage() {
   const { hasPermission } = useAuth();
@@ -26,32 +31,33 @@ export default function ClimateDashboardPage() {
   });
 
   const d = dashboardQuery.data;
+  const jobs = jobsQuery.data?.content ?? [];
+  const providers = (providersQuery.data ?? []).slice(0, 8);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-textSecondary">Climate data platform</p>
-          <h1 className="text-3xl font-semibold">Climate dashboard</h1>
-          <p className="mt-1 text-sm text-textSecondary">
-            Observation volume, import health, provider status, and quality grades.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/climate/stations" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-            Stations
-          </Link>
-          <Link to="/climate/observations" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-            Observations
-          </Link>
-          <Link to="/climate/import-jobs" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-            Import jobs
-          </Link>
-          <Link to="/climate/map" className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-            Map
-          </Link>
-        </div>
-      </div>
+      <WorkspaceBanner
+        photo={PHOTOS.groundStation}
+        eyebrow="Climate data platform"
+        title="Climate dashboard"
+        description="Observation volume, import health, provider status, and quality grades."
+        actions={
+          <>
+            <Link to="/climate/map" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
+              Map
+            </Link>
+            <Link to="/climate/stations" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+              Stations
+            </Link>
+            <Link to="/climate/observations" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+              Observations
+            </Link>
+            <Link to="/climate/import-jobs" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+              Import jobs
+            </Link>
+          </>
+        }
+      />
 
       {dashboardQuery.isError ? (
         <p className="text-sm text-danger" role="alert">
@@ -60,57 +66,78 @@ export default function ClimateDashboardPage() {
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Climate summary">
-        <StatCard label="Stations" value={String(d?.stationCount ?? '—')} detail="Registered" />
-        <StatCard
+        <KpiCard
+          label="Stations"
+          value={d?.stationCount ?? '—'}
+          detail="Registered"
+          icon={MapPinned}
+          to="/climate/stations"
+        />
+        <KpiCard
           label="Providers"
-          value={String(d?.enabledProviderCount ?? '—')}
+          value={d?.enabledProviderCount ?? '—'}
           detail={`${d?.providerCount ?? 0} total`}
+          icon={Radio}
+          tone="info"
         />
-        <StatCard
+        <KpiCard
           label="Recent observations"
-          value={String(d?.observationCountRecent ?? '—')}
+          value={d?.observationCountRecent ?? '—'}
           detail="Trusted window"
+          icon={CloudRain}
+          to="/climate/observations"
+          tone="success"
         />
-        <StatCard
+        <KpiCard
           label="Open imports"
-          value={String(d?.openImportJobs ?? '—')}
+          value={d?.openImportJobs ?? '—'}
           detail={`Quality ${d?.latestQualityGrade ?? '—'}`}
+          icon={Upload}
+          to="/climate/import-jobs"
+          tone={d?.openImportJobs ? 'warning' : 'default'}
         />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-surface p-6">
+        <div className="rounded-2xl bg-surface p-6">
           <h2 className="text-lg font-semibold">Providers</h2>
-          <ul className="mt-4 space-y-2">
-            {(providersQuery.data ?? []).slice(0, 8).map((p) => (
-              <li key={p.id} className="flex items-center justify-between text-sm">
-                <span>{p.displayName}</span>
-                <span className={p.enabled ? 'text-success' : 'text-textSecondary'}>
-                  {p.enabled ? 'Enabled' : 'Stub'}
-                </span>
+          <p className="mt-1 text-sm text-textSecondary">Feeds that land observations into the trusted window.</p>
+          <ul className="mt-5 space-y-3">
+            {providers.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-3 rounded-xl bg-background px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">{p.displayName}</p>
+                  <p className="mt-0.5 text-xs text-textSecondary">{p.code}</p>
+                </div>
+                <StatusBadge status={p.enabled ? 'ENABLED' : 'STUB'} />
               </li>
             ))}
             {providersQuery.isLoading ? <li className="text-sm text-textSecondary">Loading…</li> : null}
+            {!providersQuery.isLoading && providers.length === 0 ? (
+              <li className="text-sm text-textSecondary">No providers configured.</li>
+            ) : null}
           </ul>
         </div>
-        <div className="rounded-2xl border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recent import jobs</h2>
-            <Link to="/climate/import-jobs" className="text-sm text-primary">
+
+        <div className="rounded-2xl bg-surface p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Recent import jobs</h2>
+              <p className="mt-1 text-sm text-textSecondary">Accepted rows versus rows read on the latest runs.</p>
+            </div>
+            <Link to="/climate/import-jobs" className="text-sm font-medium text-primary">
               View all
             </Link>
           </div>
-          <ul className="mt-4 space-y-2">
-            {(jobsQuery.data?.content ?? []).map((job) => (
-              <li key={job.id} className="flex items-center justify-between text-sm">
-                <span className="font-medium">{job.jobNumber}</span>
-                <span>
-                  {job.status} · {job.rowsAccepted}/{job.rowsRead}
-                </span>
+          <ul className="mt-5 space-y-3">
+            {jobs.map((job) => (
+              <li key={job.id}>
+                <ImportJobRow job={job} />
               </li>
             ))}
-            {!jobsQuery.isLoading && (jobsQuery.data?.content?.length ?? 0) === 0 ? (
-              <li className="text-sm text-textSecondary">No import jobs yet</li>
+            {jobsQuery.isLoading ? <li className="text-sm text-textSecondary">Loading…</li> : null}
+            {!jobsQuery.isLoading && jobs.length === 0 ? (
+              <li className="rounded-xl bg-background px-4 py-6 text-sm text-textSecondary">No import jobs yet.</li>
             ) : null}
           </ul>
         </div>
@@ -119,12 +146,34 @@ export default function ClimateDashboardPage() {
   );
 }
 
-function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+function ImportJobRow({ job }: { job: ClimateImportJob }) {
+  const read = job.rowsRead || 0;
+  const accepted = job.rowsAccepted || 0;
+  const rejected = job.rowsRejected || Math.max(0, read - accepted);
+  const pct = read > 0 ? Math.min(100, Math.round((accepted / read) * 100)) : 0;
+
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <p className="text-sm text-textSecondary">{label}</p>
-      <p className="mt-2 text-3xl font-semibold">{value}</p>
-      <p className="mt-1 text-sm text-textSecondary">{detail}</p>
+    <div className="rounded-xl bg-background px-4 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className="font-mono text-sm font-semibold tracking-tight">{job.jobNumber}</p>
+          <p className="mt-1 text-xs text-textSecondary">
+            {job.jobType.replaceAll('_', ' ')} · {job.providerCode}
+          </p>
+        </div>
+        <StatusBadge status={job.status} />
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white">
+        <div
+          className={`h-full rounded-full ${rejected > 0 ? 'bg-warning' : 'bg-primary'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-textSecondary">
+        <span className="font-medium text-textPrimary">{accepted}</span> accepted
+        {read ? ` of ${read}` : ''}
+        {rejected > 0 ? ` · ${rejected} rejected` : ''}
+      </p>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { resetPassword } from '../api/auth';
+import { PoweredBy } from '../components/PoweredBy';
 
 export default function ResetPasswordPage() {
   const [params] = useSearchParams();
@@ -36,14 +37,12 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-surface p-8 shadow-sm">
-        <img
-          src="/aegisterra-logo.png"
-          alt="AegisTerra"
-          className="mb-3 h-12 w-auto object-contain"
-        />
-        <h1 className="mt-2 text-2xl font-semibold">Choose a new password</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-3xl bg-surface p-8 text-textPrimary">
+        <span className="mb-3 inline-block rounded-xl bg-white px-2 py-1">
+          <img src="/aegisterra-logo.png" alt="AegisTerra" className="h-12 w-auto object-contain" />
+        </span>
+        <h1 className="font-display mt-2 text-2xl font-semibold">Choose a new password</h1>
         <p className="mt-2 text-sm text-textSecondary">
           Use at least 12 characters with upper, lower, digit, and special character.
         </p>
@@ -65,7 +64,7 @@ export default function ResetPasswordPage() {
                 <input
                   id="token"
                   required
-                  className="w-full rounded-xl border border-border px-4 py-3"
+                  className="w-full rounded-xl bg-background px-4 py-3"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
                 />
@@ -80,7 +79,7 @@ export default function ResetPasswordPage() {
                 type="password"
                 required
                 autoComplete="new-password"
-                className="w-full rounded-xl border border-border px-4 py-3"
+                className="w-full rounded-xl bg-background px-4 py-3"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -94,7 +93,7 @@ export default function ResetPasswordPage() {
                 type="password"
                 required
                 autoComplete="new-password"
-                className="w-full rounded-xl border border-border px-4 py-3"
+                className="w-full rounded-xl bg-background px-4 py-3"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
@@ -107,13 +106,14 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:opacity-60"
+              className="at-btn w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:opacity-60"
             >
               {loading ? 'Updating…' : 'Update password'}
             </button>
           </form>
         )}
       </div>
+      <PoweredBy className="mt-6 text-center text-textSecondary" />
     </div>
   );
 }

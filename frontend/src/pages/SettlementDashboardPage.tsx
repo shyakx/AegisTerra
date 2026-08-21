@@ -81,7 +81,7 @@ export default function SettlementDashboardPage() {
           detail={`${pendingAmount.toLocaleString()} ${currency}`}
         />
         <StatCard
-          label="Completed (sample)"
+          label="Completed"
           value={String(completed.length)}
           detail={`${completedAmount.toLocaleString()} ${currency}`}
         />

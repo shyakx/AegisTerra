@@ -7,13 +7,15 @@ import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../auth/AuthContext';
 
 const CHECKS: Array<{ label: string; path: string; note: string; permission?: string }> = [
-  { label: 'Executive overview', path: '/', note: 'National operations posture' },
+  { label: 'Executive overview', path: '/app', note: 'National operations posture' },
   { label: 'Farmers', path: '/farmers', note: 'Farmer registry', permission: 'farmers:read' },
   { label: 'GIS', path: '/gis', note: 'Stations and spatial risk', permission: 'farms:read' },
   { label: 'Policies', path: '/policies', note: 'Policy portfolio', permission: 'policies:read' },
   { label: 'Claims', path: '/claims', note: 'Claims operations', permission: 'claims:read' },
   { label: 'Settlements', path: '/settlements/dashboard', note: 'Payout operations', permission: 'settlements:read' },
   { label: 'Climate intel', path: '/climate-intel', note: 'National climate risk', permission: 'climate-intel:read' },
+  { label: 'Satellite', path: '/satellite', note: 'Remote sensing', permission: 'satellite:read' },
+  { label: 'Lending', path: '/lending', note: 'Insured agricultural loans', permission: 'loans:read' },
   { label: 'Climate alerts', path: '/climate-intel/alerts', note: 'Open climate alerts', permission: 'climate-intel:read' }
 ];
 
@@ -81,7 +83,7 @@ export default function SettingsPage() {
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-xs uppercase tracking-wide text-textSecondary">Product</dt>
-            <dd className="mt-1 text-sm font-medium">AegisTerra National Insurance Platform</dd>
+            <dd className="mt-1 text-sm font-medium">AegisTerra Climate Risk Intelligence</dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-wide text-textSecondary">Release</dt>

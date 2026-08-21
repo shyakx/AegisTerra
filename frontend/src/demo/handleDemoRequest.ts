@@ -1,19 +1,37 @@
+import type { AuthUser } from '../api/auth';
 import { ApiError } from '../api/errors';
 import {
   OPERATORS,
   alerts,
   claims,
+  crops,
+  datasets,
   farms,
   farmers,
-  households,
+  hasPermission,
+  importJobs,
+  inputSales,
+  isFarmerUser,
   kigaliBoundary,
   ledgerEntries,
+  loans,
   notifications,
+  observations,
   packages,
   page,
   policies,
+  policyTypes,
   products,
+  recommendations,
   riskMap,
+  satelliteScenes,
+  scopedClaims,
+  scopedFarms,
+  scopedFarmers,
+  scopedHouseholds,
+  scopedNotifications,
+  scopedPolicies,
+  scopedTasks,
   settlements,
   stationMap,
   stations,
@@ -21,16 +39,242 @@ import {
 } from './catalog';
 import { readSessionUser, writeSessionUser } from './session';
 
-function json(body: unknown, status = 200): { status: number; body: unknown } {
-  return { status, body };
-}
-
 function requireUser() {
   const user = readSessionUser();
   if (!user) {
     throw new ApiError(401, 'Unauthorized');
   }
   return user;
+}
+
+function deny(): never {
+  throw new ApiError(403, 'Access denied');
+}
+
+function notFound(): never {
+  throw new ApiError(404, 'Not found');
+}
+
+function assertPerm(user: AuthUser, permission: string) {
+  if (!hasPermission(user, permission)) {
+    deny();
+  }
+}
+
+function isWrite(verb: string) {
+  return verb === 'POST' || verb === 'PUT' || verb === 'PATCH' || verb === 'DELETE';
+}
+
+function enforceRbac(user: AuthUser, path: string, verb: string) {
+  if (path.startsWith('/api/v1/auth')) {
+    return;
+  }
+
+  if (isFarmerUser(user)) {
+    const blocked = [
+      '/api/v1/executive',
+      '/api/v1/users',
+      '/api/v1/roles',
+      '/api/v1/permissions',
+      '/api/v1/households',
+      '/api/v1/settlements',
+      '/api/v1/ledger',
+      '/api/v1/payment-providers',
+      '/api/v1/tasks',
+      '/api/v1/decisions',
+      '/api/v1/workflows',
+      '/api/v1/climate',
+      '/api/v1/insurance-products',
+      '/api/v1/coverage-packages',
+      '/api/v1/premiums',
+      '/api/v1/insurance/reports',
+      '/api/v1/registration'
+    ];
+    if (blocked.some((prefix) => path.startsWith(prefix))) {
+      deny();
+    }
+  }
+
+  const write = isWrite(verb);
+  const need = (read: string, writePerm = read.replace(':read', ':write')) => {
+    assertPerm(user, write ? writePerm : read);
+  };
+
+  if (path.startsWith('/api/v1/executive')) {
+    if (isFarmerUser(user)) {
+      deny();
+    }
+    const any = [
+      'farmers:read',
+      'policies:read',
+      'claims:read',
+      'settlements:read',
+      'climate:read',
+      'climate-intel:read',
+      'users:read',
+      'tasks:read',
+      'loans:read',
+      'satellite:read'
+    ];
+    if (!any.some((permission) => hasPermission(user, permission))) {
+      deny();
+    }
+    return;
+  }
+
+  if (path.startsWith('/api/v1/users')) {
+    need('users:read', 'users:write');
+    return;
+  }
+  if (path.startsWith('/api/v1/roles')) {
+    if (write) {
+      assertPerm(user, 'users:write');
+    } else if (!hasPermission(user, 'roles:read') && !hasPermission(user, 'users:read')) {
+      deny();
+    }
+    return;
+  }
+  if (path.startsWith('/api/v1/permissions')) {
+    if (!hasPermission(user, 'permissions:read') && !hasPermission(user, 'users:read')) {
+      deny();
+    }
+    return;
+  }
+  if (path.startsWith('/api/v1/farmers') || path.startsWith('/api/v1/households')) {
+    need('farmers:read', 'farmers:write');
+    return;
+  }
+  if (
+    path.startsWith('/api/v1/farms') ||
+    path.startsWith('/api/v1/plots') ||
+    path.startsWith('/api/v1/crops') ||
+    path.startsWith('/api/v1/seasons') ||
+    path.startsWith('/api/v1/crop-seasons') ||
+    path.startsWith('/api/v1/farm-boundaries') ||
+    path.startsWith('/api/v1/registration')
+  ) {
+    need('farms:read', 'farms:write');
+    return;
+  }
+  if (
+    path.startsWith('/api/v1/policies') ||
+    path.startsWith('/api/v1/insurance') ||
+    path.startsWith('/api/v1/premiums') ||
+    path.startsWith('/api/v1/coverage-packages') ||
+    path.startsWith('/api/v1/policy-types') ||
+    path.startsWith('/api/v1/insurance-products')
+  ) {
+    if (write && path.includes('approve')) {
+      if (!hasPermission(user, 'policies:approve') && !hasPermission(user, 'policies:write')) {
+        deny();
+      }
+      return;
+    }
+    need('policies:read', 'policies:write');
+    return;
+  }
+  if (path.startsWith('/api/v1/claims') || path.startsWith('/api/v1/claim-types')) {
+    if (write && (path.includes('assess') || path.endsWith('/assessments') || path.endsWith('/inspections'))) {
+      if (!hasPermission(user, 'claims:assess') && !hasPermission(user, 'claims:write')) {
+        deny();
+      }
+      return;
+    }
+    need('claims:read', 'claims:write');
+    return;
+  }
+  if (path.startsWith('/api/v1/settlements') || path.startsWith('/api/v1/payment-providers')) {
+    if (
+      write &&
+      (path.includes('approve') || path.includes('process') || path.includes('complete') || path.includes('disburse'))
+    ) {
+      if (
+        !hasPermission(user, 'settlements:approve') &&
+        !hasPermission(user, 'settlements:process') &&
+        !hasPermission(user, 'settlements:write')
+      ) {
+        deny();
+      }
+      return;
+    }
+    need('settlements:read', 'settlements:write');
+    return;
+  }
+  if (path.startsWith('/api/v1/ledger')) {
+    assertPerm(user, 'ledger:read');
+    return;
+  }
+  if (path.startsWith('/api/v1/tasks') || path.startsWith('/api/v1/decisions') || path.startsWith('/api/v1/workflows')) {
+    if (write) {
+      if (!hasPermission(user, 'tasks:act') && !hasPermission(user, 'decisions:act')) {
+        deny();
+      }
+      return;
+    }
+    if (path.startsWith('/api/v1/workflows')) {
+      if (!hasPermission(user, 'workflows:read') && !hasPermission(user, 'tasks:read')) {
+        deny();
+      }
+      return;
+    }
+    assertPerm(user, 'tasks:read');
+    return;
+  }
+  if (path.startsWith('/api/v1/notifications') || path.startsWith('/api/v1/notification-preferences')) {
+    need('notifications:read', 'notifications:write');
+    return;
+  }
+  if (path.startsWith('/api/v1/loans')) {
+    need('loans:read', 'loans:write');
+    return;
+  }
+  if (path.startsWith('/api/v1/satellite')) {
+    if (!hasPermission(user, 'satellite:read') && !hasPermission(user, 'climate-intel:read')) {
+      deny();
+    }
+    return;
+  }
+  if (path.startsWith('/api/v1/insured-inputs')) {
+    need('inputs:read', 'inputs:write');
+    return;
+  }
+  if (path.startsWith('/api/v1/recommendations')) {
+    if (!hasPermission(user, 'farmers:read') && !hasPermission(user, 'notifications:read')) {
+      deny();
+    }
+    return;
+  }
+  if (path.startsWith('/api/v1/climate-intel')) {
+    if (write) {
+      if (!hasPermission(user, 'climate-intel:write') && !hasPermission(user, 'climate-intel:admin')) {
+        deny();
+      }
+      return;
+    }
+    if (!hasPermission(user, 'climate-intel:read') && !hasPermission(user, 'alerts:climate')) {
+      deny();
+    }
+    return;
+  }
+  if (path.startsWith('/api/v1/climate')) {
+    if (write) {
+      if (!hasPermission(user, 'climate:write') && !hasPermission(user, 'climate:import')) {
+        deny();
+      }
+      return;
+    }
+    assertPerm(user, 'climate:read');
+  }
+}
+
+function owned<T extends { id: string }>(row: T | undefined, allowed: boolean): T {
+  if (!row) {
+    notFound();
+  }
+  if (!allowed) {
+    deny();
+  }
+  return row;
 }
 
 function parseBody(raw: string | undefined): Record<string, unknown> {
@@ -57,6 +301,10 @@ export async function handleDemoRequest(
   const url = new URL(pathWithQuery, 'https://aegisterra.local');
   const path = url.pathname.replace(/\/$/, '') || '/';
   const q = url.searchParams.get('q')?.toLowerCase() ?? '';
+  const statusFilter = url.searchParams.get('status') ?? '';
+  const pageNo = Number(url.searchParams.get('page') ?? 0) || 0;
+  const pageSize = Number(url.searchParams.get('size') ?? 20) || 20;
+  const paged = <T,>(rows: T[]) => page(rows, pageNo, pageSize);
   const body = parseBody(rawBody);
   const verb = method.toUpperCase();
 
@@ -94,6 +342,7 @@ export async function handleDemoRequest(
   }
 
   const user = requireUser();
+  enforceRbac(user, path, verb);
 
   if (path === '/api/v1/auth/me' && verb === 'GET') {
     return user;
@@ -114,29 +363,44 @@ export async function handleDemoRequest(
   }
 
   if (path === '/api/v1/executive/overview') {
+    const farmerRows = scopedFarmers(user);
+    const farmRows = scopedFarms(user);
+    const policyRows = scopedPolicies(user);
+    const claimRows = scopedClaims(user);
+    const inbox = scopedNotifications(user);
+    const queue = scopedTasks(user);
+    const openClaims = claimRows.filter((c) => !['CLOSED', 'SETTLED', 'REJECTED'].includes(c.status)).length;
+    const approvedClaims = claimRows.filter((c) => c.status === 'APPROVED' || c.status === 'PAYMENT_PENDING').length;
+    const pendingSettlements = settlements.filter((s) => s.status === 'PENDING' || s.status === 'APPROVED');
+    const completedSettlements = settlements.filter((s) => s.status === 'COMPLETED');
+    const openAlerts = alerts.filter((a) => a.status === 'OPEN');
     return {
       generatedAt: new Date().toISOString(),
-      farmers: { total: farmers.length, active: farmers.length },
-      farms: { total: farms.length, withBoundary: farms.length },
-      policies: { total: policies.length, active: policies.length },
-      claims: { total: claims.length, open: 1, approved: 1 },
+      farmers: { total: farmerRows.length, active: farmerRows.filter((f) => f.status === 'ACTIVE').length },
+      farms: { total: farmRows.length, withBoundary: farmRows.length },
+      policies: { total: policyRows.length, active: policyRows.filter((p) => p.status === 'ACTIVE').length },
+      claims: { total: claimRows.length, open: openClaims, approved: approvedClaims },
       settlements: {
         total: settlements.length,
-        pending: 1,
-        completed: 1,
-        pendingAmount: 410000,
-        completedAmount: 540000,
+        pending: pendingSettlements.length,
+        completed: completedSettlements.length,
+        pendingAmount: pendingSettlements.reduce((sum, s) => sum + s.amount, 0),
+        completedAmount: completedSettlements.reduce((sum, s) => sum + s.amount, 0),
         currency: 'RWF'
       },
       climate: {
         stations: stations.length,
-        recentObservations: 24,
-        openAlerts: 1,
-        criticalAlerts: 1,
-        farmsByRiskGrade: { HIGH: 1, MODERATE: 2, LOW: 0 }
+        recentObservations: observations.length,
+        openAlerts: openAlerts.length,
+        criticalAlerts: alerts.filter((a) => a.severity === 'CRITICAL' || a.severity === 'HIGH').length,
+        farmsByRiskGrade: {
+          HIGH: farms.filter((_, i) => i % 7 === 0).length,
+          MODERATE: farms.filter((_, i) => i % 7 !== 0 && i % 3 === 0).length,
+          LOW: farms.filter((_, i) => i % 7 !== 0 && i % 3 !== 0).length
+        }
       },
-      tasks: { pending: tasks.length },
-      notifications: { unread: notifications.filter((n) => !n.readAt).length }
+      tasks: { pending: queue.filter((t) => t.status !== 'COMPLETED').length },
+      notifications: { unread: inbox.filter((n) => !n.readAt).length }
     };
   }
 
@@ -145,54 +409,75 @@ export async function handleDemoRequest(
       districts: [
         { districtCode: 'GASABO', meanScore: 72, grade: 'HIGH' },
         { districtCode: 'MUSANZE', meanScore: 48, grade: 'MODERATE' },
-        { districtCode: 'HUYE', meanScore: 31, grade: 'LOW' }
+        { districtCode: 'HUYE', meanScore: 54, grade: 'MODERATE' },
+        { districtCode: 'NYAGATARE', meanScore: 81, grade: 'HIGH' },
+        { districtCode: 'RUBAVU', meanScore: 29, grade: 'LOW' },
+        { districtCode: 'KAYONZA', meanScore: 36, grade: 'LOW' },
+        { districtCode: 'RUHANGO', meanScore: 41, grade: 'MODERATE' },
+        { districtCode: 'BUGESERA', meanScore: 33, grade: 'LOW' }
       ]
     };
   }
 
   if (path === '/api/v1/farmers' && verb === 'GET') {
-    const rows = farmers.filter(
+    const rows = scopedFarmers(user).filter(
       (f) =>
-        !q ||
-        f.farmerCode.toLowerCase().includes(q) ||
-        f.firstName.toLowerCase().includes(q) ||
-        f.lastName.toLowerCase().includes(q)
+        (!statusFilter || f.status === statusFilter) &&
+        (!q ||
+          f.farmerCode.toLowerCase().includes(q) ||
+          f.firstName.toLowerCase().includes(q) ||
+          f.lastName.toLowerCase().includes(q) ||
+          f.nationalId.includes(q) ||
+          f.phoneNumber.includes(q))
     );
-    return page(rows);
+    return paged(rows);
   }
 
   const farmerId = idFrom(path, '/api/v1/farmers');
   if (farmerId && verb === 'GET' && !path.includes('export')) {
-    return farmers.find((f) => f.id === farmerId) ?? json(null, 404).body;
+    const row = farmers.find((f) => f.id === farmerId);
+    return owned(row, scopedFarmers(user).some((f) => f.id === farmerId));
   }
 
   if (path === '/api/v1/farmers/export') {
-    return 'farmerCode,name\nFRM-2026-001,Jean Niyonzima\n';
+    const rows = scopedFarmers(user);
+    return `farmerCode,name\n${rows.map((f) => `${f.farmerCode},${f.firstName} ${f.lastName}`).join('\n')}\n`;
   }
 
   if (path === '/api/v1/households' && verb === 'GET') {
-    return page(households);
+    return paged(scopedHouseholds(user));
   }
 
   if (path === '/api/v1/farms' && verb === 'GET') {
-    const rows = farms.filter((f) => !q || f.farmCode.toLowerCase().includes(q) || f.farmName.toLowerCase().includes(q));
-    return page(rows);
+    const farmerIdQ = url.searchParams.get('farmerId');
+    const rows = scopedFarms(user).filter(
+      (f) =>
+        (!farmerIdQ || f.farmerId === farmerIdQ) &&
+        (!statusFilter || f.status === statusFilter) &&
+        (!q || f.farmCode.toLowerCase().includes(q) || f.farmName.toLowerCase().includes(q))
+    );
+    return paged(rows);
   }
 
   const farmId = idFrom(path, '/api/v1/farms');
   if (farmId && verb === 'GET' && !path.includes('export')) {
-    return farms.find((f) => f.id === farmId);
+    const row = farms.find((f) => f.id === farmId);
+    return owned(row, scopedFarms(user).some((f) => f.id === farmId));
   }
 
   if (path === '/api/v1/farm-boundaries') {
-    const fid = url.searchParams.get('farmId') ?? 'farm-001';
+    const fid = url.searchParams.get('farmId') ?? scopedFarms(user)[0]?.id ?? 'farm-001';
+    if (!scopedFarms(user).some((f) => f.id === fid)) {
+      deny();
+    }
+    const farm = farms.find((f) => f.id === fid);
     return [
       {
         id: `bound-${fid}`,
         farmId: fid,
         geoJson: kigaliBoundary,
         source: 'DIGITIZED',
-        areaHa: 1.8,
+        areaHa: farm?.farmSizeHa ?? 1.8,
         status: 'ACTIVE'
       }
     ];
@@ -203,24 +488,26 @@ export async function handleDemoRequest(
   }
 
   if (path === '/api/v1/plots') {
+    const fid = url.searchParams.get('farmId') ?? scopedFarms(user)[0]?.id ?? 'farm-001';
+    if (!scopedFarms(user).some((f) => f.id === fid)) {
+      deny();
+    }
+    const farm = farms.find((f) => f.id === fid);
     return [
       {
-        id: 'plot-001',
-        farmId: url.searchParams.get('farmId') ?? 'farm-001',
+        id: `plot-${fid}`,
+        farmId: fid,
         plotCode: 'PLT-001',
         name: 'Main block',
         geoJson: kigaliBoundary,
-        areaHa: 1.8,
+        areaHa: farm?.farmSizeHa ?? 1.8,
         status: 'ACTIVE'
       }
     ];
   }
 
   if (path === '/api/v1/crops') {
-    return [
-      { id: 'crop-maize', code: 'MAIZE', name: 'Maize', scientificName: 'Zea mays', status: 'ACTIVE' },
-      { id: 'crop-potato', code: 'POTATO', name: 'Potato', scientificName: 'Solanum tuberosum', status: 'ACTIVE' }
-    ];
+    return crops;
   }
 
   if (path === '/api/v1/seasons') {
@@ -237,14 +524,19 @@ export async function handleDemoRequest(
   }
 
   if (path === '/api/v1/crop-seasons') {
+    const fid = url.searchParams.get('farmId') ?? scopedFarms(user)[0]?.id ?? 'farm-001';
+    if (!scopedFarms(user).some((f) => f.id === fid)) {
+      deny();
+    }
+    const farm = farms.find((f) => f.id === fid);
     return [
       {
-        id: 'cs-001',
-        farmId: url.searchParams.get('farmId') ?? 'farm-001',
-        plotId: 'plot-001',
+        id: `cs-${fid}`,
+        farmId: fid,
+        plotId: `plot-${fid}`,
         cropId: 'crop-maize',
         seasonId: 'season-a',
-        plantedAreaHa: 1.8,
+        plantedAreaHa: farm?.farmSizeHa ?? 1.8,
         status: 'ACTIVE'
       }
     ];
@@ -261,7 +553,7 @@ export async function handleDemoRequest(
     return packages;
   }
   if (path === '/api/v1/policy-types') {
-    return [{ id: 'ptype-maize', code: 'MAIZE', name: 'Maize weather index', productId: 'prod-001' }];
+    return policyTypes;
   }
   if (path === '/api/v1/premiums/quote' && verb === 'POST') {
     return {
@@ -279,12 +571,19 @@ export async function handleDemoRequest(
   }
 
   if (path === '/api/v1/policies' && verb === 'GET') {
-    const rows = policies.filter((p) => !q || p.policyNumber.toLowerCase().includes(q));
-    return page(rows);
+    const farmerIdQ = url.searchParams.get('farmerId');
+    const rows = scopedPolicies(user).filter(
+      (p) =>
+        (!farmerIdQ || p.farmerId === farmerIdQ) &&
+        (!statusFilter || p.status === statusFilter) &&
+        (!q || p.policyNumber.toLowerCase().includes(q))
+    );
+    return paged(rows);
   }
   const policyId = idFrom(path, '/api/v1/policies');
   if (policyId && verb === 'GET' && !path.includes('/documents') && !path.includes('/export')) {
-    return policies.find((p) => p.id === policyId);
+    const row = policies.find((p) => p.id === policyId);
+    return owned(row, scopedPolicies(user).some((p) => p.id === policyId));
   }
   if (policyId && path.endsWith('/documents')) {
     return [
@@ -304,12 +603,26 @@ export async function handleDemoRequest(
     return { ...current, status: path.includes('activate') ? 'ACTIVE' : current.status };
   }
   if (path.startsWith('/api/v1/insurance/reports/')) {
-    return { reportCode: 'PORTFOLIO', rows: policies, totalCount: policies.length, totalAmount: 2270000 };
+    const rows = scopedPolicies(user);
+    return {
+      reportCode: 'PORTFOLIO',
+      rows,
+      totalCount: rows.length,
+      totalAmount: rows.reduce((sum, p) => sum + p.coverageAmount, 0)
+    };
   }
 
   if (path === '/api/v1/claims' && verb === 'GET') {
-    const rows = claims.filter((c) => !q || c.claimNumber.toLowerCase().includes(q));
-    return page(rows);
+    const farmerIdQ = url.searchParams.get('farmerId');
+    const typeCode = url.searchParams.get('claimTypeCode');
+    const rows = scopedClaims(user).filter(
+      (c) =>
+        (!farmerIdQ || c.farmerId === farmerIdQ) &&
+        (!statusFilter || c.status === statusFilter) &&
+        (!typeCode || c.claimTypeCode === typeCode) &&
+        (!q || c.claimNumber.toLowerCase().includes(q))
+    );
+    return paged(rows);
   }
   if (path === '/api/v1/claim-types') {
     return [
@@ -323,12 +636,35 @@ export async function handleDemoRequest(
         assessmentProfileJson: null,
         requiresGeo: false,
         status: 'ACTIVE'
+      },
+      {
+        id: 'ct-flood',
+        code: 'FLOOD',
+        name: 'Flood',
+        description: 'Excess rainfall and inundation',
+        nature: 'INDEX',
+        workflowDefinitionCode: 'CLAIM_STANDARD',
+        assessmentProfileJson: null,
+        requiresGeo: true,
+        status: 'ACTIVE'
+      },
+      {
+        id: 'ct-hail',
+        code: 'HAIL',
+        name: 'Hail',
+        description: 'Hail damage',
+        nature: 'INDEMNITY',
+        workflowDefinitionCode: 'CLAIM_STANDARD',
+        assessmentProfileJson: null,
+        requiresGeo: true,
+        status: 'ACTIVE'
       }
     ];
   }
   const claimId = idFrom(path, '/api/v1/claims');
   if (claimId && path === `/api/v1/claims/${claimId}` && verb === 'GET') {
-    return claims.find((c) => c.id === claimId);
+    const row = claims.find((c) => c.id === claimId);
+    return owned(row, scopedClaims(user).some((c) => c.id === claimId));
   }
   if (claimId && path.endsWith('/timeline')) {
     return [
@@ -431,10 +767,10 @@ export async function handleDemoRequest(
 
   if (path === '/api/v1/settlements' && (verb === 'GET' || verb === 'POST')) {
     const rows = settlements.filter((s) => !q || s.settlementNumber.toLowerCase().includes(q));
-    return page(rows);
+    return paged(rows);
   }
   if (path === '/api/v1/settlements/search' && verb === 'POST') {
-    return page(settlements);
+    return paged(settlements);
   }
   const setId = idFrom(path, '/api/v1/settlements');
   if (setId && path === `/api/v1/settlements/${setId}`) {
@@ -458,22 +794,27 @@ export async function handleDemoRequest(
     return {
       reportCode: 'SETTLEMENTS',
       rows: settlements,
-      totalCount: 2,
-      totalAmount: 950000,
-      pendingCount: 1,
-      completedCount: 1,
+      totalCount: settlements.length,
+      totalAmount: settlements.reduce((sum, s) => sum + s.amount, 0),
+      pendingCount: settlements.filter((s) => s.status === 'PENDING').length,
+      completedCount: settlements.filter((s) => s.status === 'COMPLETED').length,
       failedCount: 0,
-      completedTotal: 540000,
+      completedTotal: settlements.filter((s) => s.status === 'COMPLETED').reduce((sum, s) => sum + s.amount, 0),
       byStatus: [
-        { status: 'COMPLETED', count: 1 },
-        { status: 'PENDING', count: 1 }
+        { status: 'COMPLETED', count: settlements.filter((s) => s.status === 'COMPLETED').length },
+        { status: 'PENDING', count: settlements.filter((s) => s.status === 'PENDING').length },
+        { status: 'APPROVED', count: settlements.filter((s) => s.status === 'APPROVED').length }
       ],
-      byProvider: [{ providerCode: 'MTN_MOMO', count: 1 }]
+      byProvider: [
+        { providerCode: 'MTN_MOMO', count: 1 },
+        { providerCode: 'BNR_RTGS', count: 1 },
+        { providerCode: 'AIRTEL_MONEY', count: 1 }
+      ]
     };
   }
 
   if (path === '/api/v1/ledger' && verb === 'GET') {
-    return page(ledgerEntries);
+    return paged(ledgerEntries);
   }
   const ledgerId = idFrom(path, '/api/v1/ledger');
   if (ledgerId) {
@@ -503,19 +844,41 @@ export async function handleDemoRequest(
         enabled: true,
         configJson: '{}',
         status: 'ACTIVE'
+      },
+      {
+        id: 'pp-002',
+        providerCode: 'AIRTEL_MONEY',
+        displayName: 'Airtel Money',
+        paymentMethod: 'MOBILE_MONEY',
+        enabled: true,
+        configJson: '{}',
+        status: 'ACTIVE'
+      },
+      {
+        id: 'pp-003',
+        providerCode: 'BNR_RTGS',
+        displayName: 'Bank transfer (RTGS)',
+        paymentMethod: 'BANK_TRANSFER',
+        enabled: true,
+        configJson: '{}',
+        status: 'ACTIVE'
       }
     ];
   }
 
   if (path === '/api/v1/tasks' || path === '/api/v1/tasks/my') {
-    return page(tasks);
+    return paged(scopedTasks(user));
   }
   const taskId = idFrom(path, '/api/v1/tasks');
   if (taskId && path === `/api/v1/tasks/${taskId}`) {
-    return tasks.find((t) => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
+    return owned(task, scopedTasks(user).some((t) => t.id === taskId));
   }
   if (taskId && verb === 'POST') {
-    const task = tasks.find((t) => t.id === taskId) ?? tasks[0];
+    const task = owned(
+      tasks.find((t) => t.id === taskId),
+      scopedTasks(user).some((t) => t.id === taskId)
+    );
     if (path.endsWith('/complete')) {
       return { ...task, status: 'COMPLETED', outcome: 'COMPLETED', completedAt: new Date().toISOString() };
     }
@@ -542,14 +905,18 @@ export async function handleDemoRequest(
   }
 
   if (path === '/api/v1/notifications' || path === '/api/v1/notifications/unread') {
-    return page(notifications);
+    return paged(scopedNotifications(user));
   }
   if (path === '/api/v1/notifications/unread-count') {
-    return { count: notifications.filter((n) => !n.readAt).length };
+    return { count: scopedNotifications(user).filter((n) => !n.readAt).length };
   }
   const ntfId = idFrom(path, '/api/v1/notifications');
   if (ntfId) {
-    const item = notifications.find((n) => n.id === ntfId) ?? notifications[0];
+    const inbox = scopedNotifications(user);
+    const item = owned(
+      inbox.find((n) => n.id === ntfId) ?? notifications.find((n) => n.id === ntfId),
+      inbox.some((n) => n.id === ntfId)
+    );
     if (path.endsWith('/read')) {
       return { ...item, readAt: new Date().toISOString() };
     }
@@ -567,7 +934,7 @@ export async function handleDemoRequest(
       providerCount: 1,
       enabledProviderCount: 1,
       stationCount: stations.length,
-      observationCountRecent: 24,
+      observationCountRecent: observations.length,
       openImportJobs: 0,
       latestQualityGrade: 'A'
     };
@@ -576,47 +943,22 @@ export async function handleDemoRequest(
     return [{ id: 'prov-1', code: 'MANUAL', displayName: 'Manual CSV', enabled: true, capabilities: 'OBS', status: 'ACTIVE' }];
   }
   if (path === '/api/v1/climate/stations' && verb === 'GET') {
-    return page(stations);
+    return paged(stations);
   }
   const stId = idFrom(path, '/api/v1/climate/stations');
   if (stId) {
-    return stations.find((s) => s.id === stId);
+    return stations.find((s) => s.id === stId || s.code === stId);
   }
   if (path === '/api/v1/climate/observations') {
-    return page([
-      {
-        id: 'obs-001',
-        stationId: 'station-kgl',
-        observedAt: '2026-08-01T06:00:00Z',
-        variableCode: 'RAIN_MM',
-        value: 12.5,
-        unit: 'mm',
-        qualityFlag: 'OK',
-        providerCode: 'MANUAL',
-        temperatureC: 22.1,
-        rainfallMm: 12.5,
-        humidityPct: 68,
-        windSpeedMs: 2.1
-      }
-    ]);
+    const stationId = url.searchParams.get('stationId');
+    const rows = observations.filter((o) => !stationId || o.stationId === stationId);
+    return paged(rows);
   }
   if (path === '/api/v1/climate/import-jobs') {
-    return page([]);
+    return paged(importJobs);
   }
   if (path === '/api/v1/climate/datasets') {
-    return page([
-      {
-        id: 'ds-001',
-        code: 'RW-RAIN-2026',
-        name: 'National rainfall 2026',
-        description: 'Seasonal rainfall series',
-        datasetType: 'TIMESERIES',
-        providerCode: 'MANUAL',
-        status: 'ACTIVE',
-        timeStart: '2026-01-01T00:00:00Z',
-        timeEnd: '2026-08-01T00:00:00Z'
-      }
-    ]);
+    return paged(datasets);
   }
   if (path === '/api/v1/climate/map/stations') {
     return stationMap();
@@ -630,19 +972,26 @@ export async function handleDemoRequest(
 
   if (path === '/api/v1/climate-intel/national/dashboard') {
     return {
-      farmsByGrade: { HIGH: 1, MODERATE: 2, LOW: 5 },
-      openCriticalAlerts: 1,
-      openAlerts: 1,
+      farmsByGrade: {
+        HIGH: farms.filter((_, i) => i % 7 === 0).length,
+        MODERATE: farms.filter((_, i) => i % 7 !== 0 && i % 3 === 0).length,
+        LOW: farms.filter((_, i) => i % 7 !== 0 && i % 3 !== 0).length
+      },
+      openCriticalAlerts: alerts.filter((a) => a.status === 'OPEN' && (a.severity === 'CRITICAL' || a.severity === 'HIGH')).length,
+      openAlerts: alerts.filter((a) => a.status === 'OPEN').length,
       districtHeat: [
         { districtCode: 'GASABO', meanScore: 72, grade: 'HIGH' },
-        { districtCode: 'MUSANZE', meanScore: 48, grade: 'MODERATE' }
+        { districtCode: 'MUSANZE', meanScore: 48, grade: 'MODERATE' },
+        { districtCode: 'HUYE', meanScore: 54, grade: 'MODERATE' },
+        { districtCode: 'NYAGATARE', meanScore: 81, grade: 'HIGH' }
       ],
       dataCoveragePct: 96,
       generatedAt: new Date().toISOString()
     };
   }
   if (path === '/api/v1/climate-intel/alerts') {
-    return page(alerts);
+    const rows = alerts.filter((a) => !statusFilter || a.status === statusFilter);
+    return paged(rows);
   }
   const alertId = idFrom(path, '/api/v1/climate-intel/alerts');
   if (alertId) {
@@ -731,7 +1080,7 @@ export async function handleDemoRequest(
       jobNumber: 'CLT-JOB-2026-000000001',
       jobType: 'RECALCULATE',
       status: 'COMPLETED',
-      subjectsProcessed: 3,
+      subjectsProcessed: 60,
       errorSummary: null,
       startedAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
@@ -739,14 +1088,62 @@ export async function handleDemoRequest(
     };
   }
   if (path === '/api/v1/climate-intel/indicators') {
-    return page([]);
+    return paged([]);
   }
   if (path.startsWith('/api/v1/climate-intel/reports/')) {
     return { ok: true };
   }
 
+  if (path === '/api/v1/loans' && verb === 'GET') {
+    const rows = loans.filter(
+      (l) =>
+        (!statusFilter || l.status === statusFilter) &&
+        (!q ||
+          l.loanNumber.toLowerCase().includes(q) ||
+          l.borrowerName.toLowerCase().includes(q) ||
+          l.farmerCode.toLowerCase().includes(q))
+    );
+    return paged(rows);
+  }
+  const loanId = idFrom(path, '/api/v1/loans');
+  if (loanId && path === `/api/v1/loans/${loanId}`) {
+    return owned(
+      loans.find((l) => l.id === loanId),
+      true
+    );
+  }
+
+  if (path === '/api/v1/satellite/summary') {
+    const stressed = satelliteScenes.filter((s) => s.vegetationHealth === 'STRESSED' || s.environmentalStress === 'HIGH');
+    return {
+      sceneCount: satelliteScenes.length,
+      stressedDistricts: new Set(stressed.map((s) => s.districtCode)).size,
+      highDrought: satelliteScenes.filter((s) => s.droughtSeverity === 'HIGH').length,
+      generatedAt: new Date().toISOString(),
+      scenes: satelliteScenes
+    };
+  }
+
+  if (path === '/api/v1/insured-inputs' && verb === 'GET') {
+    const rows = inputSales.filter(
+      (s) =>
+        !q ||
+        s.receiptNumber.toLowerCase().includes(q) ||
+        s.farmerName.toLowerCase().includes(q) ||
+        s.productName.toLowerCase().includes(q)
+    );
+    return paged(rows);
+  }
+
+  if (path === '/api/v1/recommendations') {
+    const rows = isFarmerUser(user)
+      ? recommendations.filter((r) => r.farmerId === user.farmerId)
+      : recommendations;
+    return rows;
+  }
+
   if (path === '/api/v1/users' && verb === 'GET') {
-    return page(
+    return paged(
       OPERATORS.map((o) => ({
         id: o.user.id,
         username: o.user.username,
@@ -757,6 +1154,24 @@ export async function handleDemoRequest(
         status: 'ACTIVE'
       }))
     );
+  }
+  const userAuditMatch = path.match(/^\/api\/v1\/users\/([^/]+)\/audit$/);
+  if (userAuditMatch && verb === 'GET') {
+    return [];
+  }
+  const userOneMatch = path.match(/^\/api\/v1\/users\/([^/]+)$/);
+  if (userOneMatch && verb === 'GET') {
+    const op = OPERATORS.find((o) => o.user.id === userOneMatch[1]);
+    if (!op) notFound();
+    return {
+      id: op.user.id,
+      username: op.user.username,
+      email: op.user.email,
+      displayName: op.user.displayName,
+      role: op.user.roles[0],
+      roles: op.user.roles,
+      status: 'ACTIVE'
+    };
   }
   if (path === '/api/v1/roles') {
     return OPERATORS.map((o) => ({
@@ -784,5 +1199,5 @@ export async function handleDemoRequest(
     return undefined;
   }
 
-  return page([]);
+  return paged([]);
 }

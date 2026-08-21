@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { forgotPassword } from '../api/auth';
+import { PoweredBy } from '../components/PoweredBy';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -23,24 +24,22 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md rounded-3xl border border-border bg-surface p-8 shadow-sm">
-        <img
-          src="/aegisterra-logo.png"
-          alt="AegisTerra"
-          className="mb-3 h-12 w-auto object-contain"
-        />
-        <h1 className="mt-2 text-2xl font-semibold text-textPrimary">Reset your password</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-3xl bg-surface p-8 text-textPrimary">
+        <span className="mb-3 inline-block rounded-xl bg-white px-2 py-1">
+          <img src="/aegisterra-logo.png" alt="AegisTerra" className="h-12 w-auto object-contain" />
+        </span>
+        <h1 className="font-display mt-2 text-2xl font-semibold text-textPrimary">Reset your password</h1>
         <p className="mt-2 text-sm text-textSecondary">
           Enter your account email. If it exists, you will receive reset instructions.
         </p>
 
         {submitted ? (
           <div className="mt-6 space-y-4" role="status">
-            <p className="text-sm text-textPrimary">
+            <p className="text-sm text-textSecondary">
               If an account matches that email, a reset link has been issued. Check your inbox and follow the instructions.
             </p>
-            <Link className="inline-block text-sm font-medium text-primary hover:underline" to="/login">
+            <Link className="inline-block text-sm font-medium text-primary" to="/login">
               Back to sign-in
             </Link>
           </div>
@@ -55,7 +54,7 @@ export default function ForgotPasswordPage() {
                 type="email"
                 required
                 autoComplete="email"
-                className="w-full rounded-xl border border-border px-4 py-3"
+                className="w-full rounded-xl bg-background px-4 py-3"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -68,16 +67,17 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:opacity-60"
+              className="at-btn w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white disabled:opacity-60"
             >
               {loading ? 'Sending…' : 'Send reset link'}
             </button>
-            <Link className="block text-center text-sm text-primary hover:underline" to="/login">
+            <Link className="block text-center text-sm font-medium text-primary" to="/login">
               Back to sign-in
             </Link>
           </form>
         )}
       </div>
+      <PoweredBy className="mt-6 text-center text-textSecondary" />
     </div>
   );
 }

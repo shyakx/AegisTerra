@@ -5,6 +5,8 @@ import { claimsApi, type Claim } from '../api/claims';
 import { EnterpriseTable } from '../components/EnterpriseTable';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { PHOTOS } from '../media/photos';
+import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
 const STATUSES = [
   'DRAFT',
@@ -41,24 +43,30 @@ export default function ClaimsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-textSecondary">{isFarmer ? 'Farmer portal' : 'Claims management'}</p>
-          <h1 className="text-3xl font-semibold">{isFarmer ? 'My claims' : 'Claims'}</h1>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {!isFarmer && hasPermission('tasks:read') ? (
-            <Link to="/tasks?subjectType=CLAIM" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-              Claim tasks
-            </Link>
-          ) : null}
-          {hasPermission('claims:write') ? (
-            <Link to="/claims/new" className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-              {isFarmer ? 'File a claim' : 'New claim'}
-            </Link>
-          ) : null}
-        </div>
-      </div>
+      <WorkspaceBanner
+        photo={PHOTOS.laptop}
+        eyebrow={isFarmer ? 'My records' : 'Claims management'}
+        title={isFarmer ? 'My claims' : 'Claims'}
+        description={
+          isFarmer
+            ? 'Loss events on your policies — status, evidence, and payout notices.'
+            : 'Partner claims reviewed against climate-verified farm records.'
+        }
+        actions={
+          <>
+            {hasPermission('claims:write') ? (
+              <Link to="/claims/new" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
+                {isFarmer ? 'File a claim' : 'New claim'}
+              </Link>
+            ) : null}
+            {!isFarmer && hasPermission('tasks:read') ? (
+              <Link to="/tasks?subjectType=CLAIM" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+                Claim tasks
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       <EnterpriseTable<Claim>
         title={isFarmer ? 'My claims' : 'Claim portfolio'}

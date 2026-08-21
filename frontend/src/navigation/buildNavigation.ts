@@ -10,7 +10,8 @@ import {
   CloudSun,
   Wallet,
   ClipboardList,
-  Landmark
+  Landmark,
+  Satellite
 } from 'lucide-react';
 
 export type NavItem = {
@@ -38,6 +39,7 @@ const ROLE_ORDER = [
   'INSURANCE_OFFICER',
   'FI_OFFICER',
   'GOVERNMENT_ANALYST',
+  'DEVELOPMENT_PARTNER',
   'AGGREGATOR',
   'FARMER',
   'AUDITOR',
@@ -46,40 +48,44 @@ const ROLE_ORDER = [
 
 const HEADER_BY_ROLE: Record<string, { eyebrow: string; title: string }> = {
   SYSTEM_ADMIN: {
-    eyebrow: 'Government-grade agricultural insurance',
-    title: 'Operations Command Center'
+    eyebrow: 'Climate risk intelligence',
+    title: 'Agricultural risk backbone'
   },
   INSURANCE_ADMIN: {
-    eyebrow: 'Insurer administration',
-    title: 'Insurance Operations'
+    eyebrow: 'Partner insurer',
+    title: 'Product design and portfolio'
   },
   INSURANCE_OFFICER: {
-    eyebrow: 'Policy & claims operations',
-    title: 'Insurance Workstation'
+    eyebrow: 'Partner insurer',
+    title: 'Policy and claims administration'
   },
   FI_OFFICER: {
-    eyebrow: 'Settlement & payouts',
-    title: 'Financial Operations'
+    eyebrow: 'Financial institution',
+    title: 'Agricultural lending'
   },
   GOVERNMENT_ANALYST: {
-    eyebrow: 'National agricultural insurance',
-    title: 'National Overview'
+    eyebrow: 'Government',
+    title: 'National risk and food security'
+  },
+  DEVELOPMENT_PARTNER: {
+    eyebrow: 'Development partner',
+    title: 'Programme intelligence'
   },
   AGGREGATOR: {
-    eyebrow: 'Farmer onboarding',
-    title: 'Aggregator Workspace'
+    eyebrow: 'Aggregator network',
+    title: 'Farmer onboarding and insured inputs'
   },
   FARMER: {
-    eyebrow: 'Farmer self-service',
-    title: 'Farmer Portal'
+    eyebrow: 'Farmer',
+    title: 'My farm and coverage'
   },
   AUDITOR: {
-    eyebrow: 'Read-only assurance',
-    title: 'Audit Workspace'
+    eyebrow: 'Assurance',
+    title: 'Audit workspace'
   },
   SUPPORT: {
     eyebrow: 'Operator assistance',
-    title: 'Support Desk'
+    title: 'Support desk'
   }
 };
 
@@ -88,342 +94,288 @@ function catalogForRole(role: string | undefined, farmerId?: string | null): Nav
     case 'INSURANCE_ADMIN':
       return [
         {
-          label: 'Operations',
+          label: 'Workspace',
           items: [
-            { label: 'Overview', to: '/', icon: LayoutDashboard },
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
             { label: 'Tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'Registry',
+          label: 'Risk intelligence',
+          items: [
+            { label: 'Climate risk reports', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
+            { label: 'Satellite', to: '/satellite', icon: Satellite, permission: 'satellite:read' },
+            { label: 'Climate data', to: '/climate', icon: CloudSun, permission: 'climate:read' }
+          ]
+        },
+        {
+          label: 'Policy administration',
+          items: [
+            { label: 'Products', to: '/insurance/products', icon: ShieldCheck, permission: 'policies:read' },
+            { label: 'Premium pricing', to: '/insurance/calculator', icon: FileText, permission: 'policies:read' },
+            { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
+            { label: 'Reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' }
+          ]
+        },
+        {
+          label: 'Claims and payouts',
+          items: [
+            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' }
+          ]
+        },
+        {
+          label: 'Farmer management',
           items: [
             { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
             { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' },
             { label: 'GIS', to: '/gis', icon: Map, permission: 'farms:read' }
           ]
         },
-        {
-          label: 'Insurance',
-          items: [
-            { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
-            { label: 'Products', to: '/insurance/products', icon: ShieldCheck, permission: 'policies:read' },
-            { label: 'Premium calc', to: '/insurance/calculator', icon: FileText, permission: 'policies:read' },
-            { label: 'Ins. reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' },
-            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' }
-          ]
-        },
-        {
-          label: 'Climate',
-          items: [
-            { label: 'Climate data', to: '/climate', icon: CloudSun, permission: 'climate:read' },
-            { label: 'Climate intel', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' }
-          ]
-        },
-        {
-          label: 'Account',
-          items: [{ label: 'Platform info', to: '/settings', icon: Settings }]
-        }
+        { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'INSURANCE_OFFICER':
       return [
         {
-          label: 'My Work',
+          label: 'Workspace',
           items: [
-            { label: 'Overview', to: '/', icon: LayoutDashboard },
-            { label: 'My Tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
+            { label: 'My tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'Insurance',
+          label: 'Risk intelligence',
           items: [
-            { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
-            { label: 'Premium calc', to: '/insurance/calculator', icon: FileText, permission: 'policies:read' },
-            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' },
-            { label: 'Ins. reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' }
+            { label: 'Climate risk reports', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
+            { label: 'Satellite', to: '/satellite', icon: Satellite, permission: 'satellite:read' }
           ]
         },
         {
-          label: 'Registry',
+          label: 'Policy administration',
+          items: [
+            { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
+            { label: 'Premium pricing', to: '/insurance/calculator', icon: FileText, permission: 'policies:read' },
+            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' }
+          ]
+        },
+        {
+          label: 'Farmer management',
           items: [
             { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
             { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' }
           ]
         },
-        {
-          label: 'Account',
-          items: [{ label: 'Platform info', to: '/settings', icon: Settings }]
-        }
+        { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'FI_OFFICER':
       return [
         {
-          label: 'My Work',
+          label: 'Workspace',
           items: [
-            { label: 'Overview', to: '/', icon: LayoutDashboard },
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
             { label: 'Tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'Financial Operations',
+          label: 'Agricultural lending',
           items: [
-            { label: 'Settlements', to: '/settlements', icon: Wallet, permission: 'settlements:read' },
-            { label: 'Settle. dash', to: '/settlements/dashboard', icon: LayoutDashboard, permission: 'settlements:read' },
-            { label: 'Finance review', to: '/settlements/finance', icon: ClipboardList, permission: 'settlements:approve' },
-            { label: 'Settle. reports', to: '/settlements/reports', icon: FileText, permission: 'reports:settlements' },
-            { label: 'Ledger', to: '/ledger', icon: Landmark, permission: 'ledger:read' },
-            { label: 'Pay providers', to: '/payment-providers', icon: Settings, permission: 'settlements:read' }
+            { label: 'Insured loans', to: '/lending', icon: Landmark, permission: 'loans:read' },
+            { label: 'Borrowers', to: '/farmers', icon: Users, permission: 'farmers:read' },
+            { label: 'Crop performance', to: '/farms', icon: Map, permission: 'farms:read' }
           ]
         },
         {
-          label: 'Supporting reads',
+          label: 'Risk intelligence',
           items: [
-            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' },
-            { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' }
+            { label: 'Climate risk', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
+            { label: 'Satellite', to: '/satellite', icon: Satellite, permission: 'satellite:read' }
           ]
         },
         {
-          label: 'Account',
-          items: [{ label: 'Platform info', to: '/settings', icon: Settings }]
-        }
+          label: 'Payout status',
+          items: [
+            { label: 'Payouts', to: '/settlements', icon: Wallet, permission: 'settlements:read' },
+            { label: 'Linked policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' }
+          ]
+        },
+        { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'GOVERNMENT_ANALYST':
+    case 'DEVELOPMENT_PARTNER':
       return [
         {
-          label: 'National Overview',
+          label: 'National intelligence',
           items: [
-            { label: 'Executive', to: '/', icon: LayoutDashboard },
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'Agriculture Insights',
+          label: 'Climate and satellite',
+          items: [
+            { label: 'Climate risk', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
+            { label: 'Satellite', to: '/satellite', icon: Satellite, permission: 'satellite:read' },
+            { label: 'Alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' },
+            { label: 'Climate data', to: '/climate', icon: CloudSun, permission: 'climate:read' }
+          ]
+        },
+        {
+          label: 'Coverage and production',
           items: [
             { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
             { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' },
-            { label: 'GIS', to: '/gis', icon: Map, permission: 'farms:read' }
-          ]
-        },
-        {
-          label: 'Insurance Insights',
-          items: [
+            { label: 'GIS', to: '/gis', icon: Map, permission: 'farms:read' },
             { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
-            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' },
-            { label: 'Ins. reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' }
+            { label: 'Reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' }
           ]
         },
-        {
-          label: 'Climate Intelligence',
-          items: [
-            { label: 'Climate data', to: '/climate', icon: CloudSun, permission: 'climate:read' },
-            { label: 'National risk', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
-            { label: 'Alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' }
-          ]
-        },
-        {
-          label: 'Financial Insights',
-          items: [
-            { label: 'Settlements', to: '/settlements', icon: Wallet, permission: 'settlements:read' },
-            { label: 'Settle. reports', to: '/settlements/reports', icon: FileText, permission: 'reports:settlements' },
-            { label: 'Ledger', to: '/ledger', icon: Landmark, permission: 'ledger:read' }
-          ]
-        },
-        {
-          label: 'Account',
-          items: [{ label: 'Platform info', to: '/settings', icon: Settings }]
-        }
+        { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'AGGREGATOR':
       return [
         {
-          label: 'My Work',
+          label: 'Workspace',
           items: [
-            { label: 'Overview', to: '/', icon: LayoutDashboard },
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
             { label: 'Tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'Onboarding',
+          label: 'Farmer management',
           items: [
-            { label: 'Households', to: '/households', icon: Users, permission: 'farmers:read' },
+            { label: 'Register farmer', to: '/farmers/register', icon: Users, permission: 'farmers:write' },
             { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
             { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' },
             { label: 'GIS', to: '/gis', icon: Map, permission: 'farms:read' }
           ]
         },
         {
-          label: 'Cover context',
-          items: [{ label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' }]
+          label: 'Insured inputs',
+          items: [{ label: 'Seed and fertilizer', to: '/inputs', icon: ShieldCheck, permission: 'inputs:read' }]
         },
-        {
-          label: 'Account',
-          items: [{ label: 'Platform info', to: '/settings', icon: Settings }]
-        }
+        { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'FARMER':
       return [
         {
-          label: 'My Workspace',
+          label: 'My workspace',
           items: [
-            { label: 'Home', to: '/', icon: LayoutDashboard },
+            { label: 'Home', to: '/app', icon: LayoutDashboard },
+            { label: 'Guidance', to: '/guidance', icon: Bell, permission: 'notifications:read' },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'My Farm',
+          label: 'My farm',
           items: [
-            { label: 'My profile', to: farmerId ? `/farmers/${farmerId}` : '/farmers', icon: Users, permission: 'farmers:read' },
+            {
+              label: 'My profile',
+              to: farmerId ? `/farmers/${farmerId}` : '/farmers',
+              icon: Users,
+              permission: 'farmers:read'
+            },
             { label: 'My farms', to: '/farms', icon: Map, permission: 'farms:read' }
           ]
         },
         {
-          label: 'My Cover',
+          label: 'Cover from partners',
           items: [
             { label: 'My policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
             { label: 'My claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' }
           ]
         },
-        {
-          label: 'Account',
-          items: [{ label: 'Platform info', to: '/settings', icon: Settings }]
-        }
+        { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'AUDITOR':
       return [
         {
-          label: 'Audit Desk',
+          label: 'Assurance',
           items: [
-            { label: 'Overview', to: '/', icon: LayoutDashboard },
-            { label: 'Tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'Agriculture',
+          label: 'Capabilities',
           items: [
             { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
-            { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' },
-            { label: 'GIS', to: '/gis', icon: Map, permission: 'farms:read' }
-          ]
-        },
-        {
-          label: 'Insurance',
-          items: [
             { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
             { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' },
-            { label: 'Ins. reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' }
+            { label: 'Payouts', to: '/settlements', icon: Wallet, permission: 'settlements:read' },
+            { label: 'Loans', to: '/lending', icon: Landmark, permission: 'loans:read' },
+            { label: 'Climate risk', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
+            { label: 'Satellite', to: '/satellite', icon: Satellite, permission: 'satellite:read' }
           ]
         },
-        {
-          label: 'Finance & Ledger',
-          items: [
-            { label: 'Settlements', to: '/settlements', icon: Wallet, permission: 'settlements:read' },
-            { label: 'Settle. reports', to: '/settlements/reports', icon: FileText, permission: 'reports:settlements' },
-            { label: 'Ledger', to: '/ledger', icon: Landmark, permission: 'ledger:read' }
-          ]
-        },
-        {
-          label: 'Climate',
-          items: [
-            { label: 'Climate data', to: '/climate', icon: CloudSun, permission: 'climate:read' },
-            { label: 'Climate intel', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
-            { label: 'Alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' }
-          ]
-        },
-        {
-          label: 'Administration',
-          items: [
-            { label: 'Users', to: '/users', icon: Users, permission: 'users:read' },
-            { label: 'Platform info', to: '/settings', icon: Settings }
-          ]
-        }
+        { label: 'Account', items: [{ label: 'Users', to: '/users', icon: Users, permission: 'users:read' }, { label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'SUPPORT':
       return [
         {
-          label: 'Support Desk',
+          label: 'Support desk',
           items: [
-            { label: 'Overview', to: '/', icon: LayoutDashboard },
-            { label: 'Tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
-            { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
-          ]
-        },
-        {
-          label: 'User assistance',
-          items: [{ label: 'Users', to: '/users', icon: Users, permission: 'users:read' }]
-        },
-        {
-          label: 'Registry lookup',
-          items: [
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
+            { label: 'Users', to: '/users', icon: Users, permission: 'users:read' },
             { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
-            { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' }
-          ]
-        },
-        {
-          label: 'Case lookup',
-          items: [
             { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
             { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' }
           ]
         },
-        {
-          label: 'Account',
-          items: [{ label: 'Platform info', to: '/settings', icon: Settings }]
-        }
+        { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
       ];
     case 'SYSTEM_ADMIN':
     default:
       return [
         {
-          label: 'Operations Command Center',
+          label: 'Workspace',
           items: [
-            { label: 'Overview', to: '/', icon: LayoutDashboard },
+            { label: 'Overview', to: '/app', icon: LayoutDashboard },
             { label: 'Tasks', to: '/tasks', icon: ClipboardList, permission: 'tasks:read' },
             { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
           ]
         },
         {
-          label: 'Agriculture',
+          label: 'Farmer management',
           items: [
-            { label: 'Households', to: '/households', icon: Users, permission: 'farmers:read' },
             { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
             { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' },
-            { label: 'Crops', to: '/crops', icon: FileText, permission: 'farms:read' },
-            { label: 'Seasons', to: '/seasons', icon: FileText, permission: 'farms:read' },
             { label: 'GIS', to: '/gis', icon: Map, permission: 'farms:read' }
           ]
         },
         {
-          label: 'Insurance & Claims',
-          items: [
-            { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
-            { label: 'Products', to: '/insurance/products', icon: ShieldCheck, permission: 'policies:read' },
-            { label: 'Premium calc', to: '/insurance/calculator', icon: FileText, permission: 'policies:read' },
-            { label: 'Ins. reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' },
-            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' }
-          ]
-        },
-        {
-          label: 'Settlement',
-          items: [
-            { label: 'Settlements', to: '/settlements', icon: Wallet, permission: 'settlements:read' },
-            { label: 'Settle. dash', to: '/settlements/dashboard', icon: LayoutDashboard, permission: 'settlements:read' },
-            { label: 'Finance review', to: '/settlements/finance', icon: ClipboardList, permission: 'settlements:approve' },
-            { label: 'Settle. reports', to: '/settlements/reports', icon: FileText, permission: 'reports:settlements' },
-            { label: 'Ledger', to: '/ledger', icon: Landmark, permission: 'ledger:read' },
-            { label: 'Pay providers', to: '/payment-providers', icon: Settings, permission: 'settlements:read' }
-          ]
-        },
-        {
-          label: 'Climate',
+          label: 'Climate intelligence',
           items: [
             { label: 'Climate data', to: '/climate', icon: CloudSun, permission: 'climate:read' },
-            { label: 'Climate intel', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
-            { label: 'Climate alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' }
+            { label: 'Risk intelligence', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
+            { label: 'Alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' }
           ]
+        },
+        {
+          label: 'Satellite intelligence',
+          items: [{ label: 'Remote sensing', to: '/satellite', icon: Satellite, permission: 'satellite:read' }]
+        },
+        {
+          label: 'Policy administration',
+          items: [
+            { label: 'Products', to: '/insurance/products', icon: ShieldCheck, permission: 'policies:read' },
+            { label: 'Policies', to: '/policies', icon: ShieldCheck, permission: 'policies:read' },
+            { label: 'Premium pricing', to: '/insurance/calculator', icon: FileText, permission: 'policies:read' },
+            { label: 'Reports', to: '/insurance/reports', icon: FileText, permission: 'policies:read' }
+          ]
+        },
+        {
+          label: 'Claims and payouts',
+          items: [
+            { label: 'Claims', to: '/claims', icon: ClipboardList, permission: 'claims:read' },
+            { label: 'Payouts', to: '/settlements', icon: Wallet, permission: 'settlements:read' }
+          ]
+        },
+        {
+          label: 'Agricultural lending',
+          items: [{ label: 'Insured loans', to: '/lending', icon: Landmark, permission: 'loans:read' }]
         },
         {
           label: 'Administration',

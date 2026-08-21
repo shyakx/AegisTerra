@@ -43,7 +43,7 @@ export default function UsersPage() {
   });
 
   const auditQuery = useQuery({
-    queryKey: ['user-audit', selectedId],
+    queryKey: ['user-audit', selectedId, 'entries'],
     queryFn: () => usersApi.audit(selectedId!),
     enabled: !!selectedId && hasPermission('users:read')
   });
@@ -52,6 +52,7 @@ export default function UsersPage() {
     () => usersQuery.data?.content.find((u) => u.id === selectedId) ?? null,
     [usersQuery.data, selectedId]
   );
+  const auditEntries = Array.isArray(auditQuery.data) ? auditQuery.data : [];
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -333,13 +334,13 @@ export default function UsersPage() {
                   <p className="mt-2 text-xs text-textSecondary">Loading audit…</p>
                 ) : (
                   <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-xs text-textSecondary">
-                    {(auditQuery.data ?? []).map((a) => (
+                    {auditEntries.map((a) => (
                       <li key={a.id}>
                         <span className="font-medium text-textPrimary">{a.action}</span>{' '}
                         · {new Date(a.createdAt).toLocaleString()}
                       </li>
                     ))}
-                    {(auditQuery.data?.length ?? 0) === 0 ? <li>No audit events yet.</li> : null}
+                    {auditEntries.length === 0 ? <li>No audit events yet.</li> : null}
                   </ul>
                 )}
               </div>

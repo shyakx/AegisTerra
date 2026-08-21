@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { climateIntelApi } from '../api/climateIntel';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { PHOTOS } from '../media/photos';
+import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
 export default function NationalRiskDashboardPage() {
   const { hasPermission } = useAuth();
@@ -18,26 +20,25 @@ export default function NationalRiskDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-textSecondary">Climate intelligence</p>
-          <h1 className="text-3xl font-semibold">National risk dashboard</h1>
-          <p className="mt-1 text-sm text-textSecondary">
-            Deterministic risk grades, alerts, and district heat from Climate Data aggregates.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link to="/climate-intel/alerts" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-            Alerts
-          </Link>
-          <Link to="/climate-intel/jobs" className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface">
-            Recalc jobs
-          </Link>
-          <Link to="/climate" className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-            Climate data
-          </Link>
-        </div>
-      </div>
+      <WorkspaceBanner
+        photo={PHOTOS.earthNight}
+        eyebrow="Climate intelligence"
+        title="National risk dashboard"
+        description="Deterministic risk grades, alerts, and district heat from Climate Data aggregates."
+        actions={
+          <>
+            <Link to="/climate" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
+              Climate data
+            </Link>
+            <Link to="/climate-intel/alerts" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+              Alerts
+            </Link>
+            <Link to="/climate-intel/jobs" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+              Recalc jobs
+            </Link>
+          </>
+        }
+      />
 
       {dashQuery.isError ? (
         <p className="text-sm text-danger" role="alert">

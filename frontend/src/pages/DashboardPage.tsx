@@ -9,7 +9,8 @@ import {
   MapPinned,
   ShieldCheck,
   Users,
-  Wallet
+  Wallet,
+  Landmark
 } from 'lucide-react';
 import { executiveApi } from '../api/executive';
 import { climateApi } from '../api/climate';
@@ -20,9 +21,11 @@ import { insuranceApi } from '../api/insurance';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { KpiCard } from '../components/KpiCard';
-import { PageHeader, PageActionLink } from '../components/PageHeader';
+import { PageActionLink } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { roleDashboardMeta, roleQuickLinks, showsFocus } from '../navigation/roleDashboard';
+import { PHOTOS } from '../media/photos';
+import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
 const EXECUTIVE_PERMS = [
   'farmers:read',
@@ -30,7 +33,8 @@ const EXECUTIVE_PERMS = [
   'claims:read',
   'settlements:read',
   'climate-intel:read',
-  'climate:read'
+  'climate:read',
+  'loans:read'
 ] as const;
 
 export default function DashboardPage() {
@@ -92,7 +96,7 @@ export default function DashboardPage() {
   const headerActions = (
     <>
       {quickLinks.slice(0, 3).map((link, idx) => (
-        <PageActionLink key={link.to} to={link.to} variant={idx === 0 ? 'primary' : 'secondary'}>
+        <PageActionLink key={link.to} to={link.to} variant={idx === 0 ? 'onPhoto' : 'ghost'}>
           {link.label}
         </PageActionLink>
       ))}
@@ -103,7 +107,8 @@ export default function DashboardPage() {
     const me = farmerMeQuery.data?.content?.[0];
     return (
       <div className="space-y-6">
-        <PageHeader
+        <WorkspaceBanner
+          photo={PHOTOS.farmerField}
           eyebrow={meta.eyebrow}
           title={meta.title}
           description={meta.description}
@@ -121,7 +126,7 @@ export default function DashboardPage() {
           <KpiCard
             label="My farms"
             value={fmt(farmerFarmsQuery.data?.totalElements)}
-            detail="Scoped to your account"
+            detail="Registered holdings"
             icon={MapPinned}
             to="/farms"
           />
@@ -142,7 +147,7 @@ export default function DashboardPage() {
             tone="warning"
           />
         </section>
-        <section className="rounded-2xl border border-border bg-surface p-6">
+        <section className="rounded-2xl bg-surface p-6">
           <h2 className="text-lg font-semibold">Quick links</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {quickLinks.map((link) => (
@@ -152,8 +157,8 @@ export default function DashboardPage() {
             ))}
           </div>
           <p className="mt-4 text-sm text-textSecondary">
-            Signed in as {user?.displayName || user?.username}. Records below are scoped to your linked farmer
-            {me?.farmerCode ? ` (${me.farmerCode})` : ''}.
+            Signed in as {user?.displayName || user?.username}
+            {me?.farmerCode ? ` · ${me.farmerCode}` : ''}.
           </p>
         </section>
       </div>
@@ -162,7 +167,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow={meta.eyebrow} title={meta.title} description={meta.description} actions={headerActions} />
+      <WorkspaceBanner
+        photo={PHOTOS.fieldsAerial}
+        eyebrow={meta.eyebrow}
+        title={meta.title}
+        description={meta.description}
+        actions={headerActions}
+      />
 
       {!canExecutive ? (
         <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-textSecondary" role="status">
@@ -210,6 +221,16 @@ export default function DashboardPage() {
               icon={ClipboardList}
               to="/claims"
               tone="warning"
+            />
+          ) : null}
+          {showsFocus(meta, 'lending') && hasPermission('loans:read') ? (
+            <KpiCard
+              label="Insured loans"
+              value="Open"
+              detail="Climate-informed agricultural credit"
+              icon={Landmark}
+              to="/lending"
+              tone="info"
             />
           ) : null}
           {(showsFocus(meta, 'finance') || showsFocus(meta, 'portfolio')) && hasPermission('settlements:read') ? (
@@ -278,7 +299,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-border bg-surface p-6">
+      <section className="rounded-2xl bg-surface p-6">
         <h2 className="text-lg font-semibold">Workspace shortcuts</h2>
         <div className="mt-4 flex flex-wrap gap-2">
           {quickLinks.map((link) => (
@@ -291,7 +312,7 @@ export default function DashboardPage() {
 
       {showsFocus(meta, 'climate') && (hasPermission('climate:read') || hasPermission('climate-intel:read')) ? (
         <section className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="overflow-hidden rounded-2xl bg-surface">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <div>
                 <p className="text-sm text-textSecondary">Spatial posture</p>
@@ -354,7 +375,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+          <div className="rounded-2xl bg-surface p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-textSecondary">Climate alerts</p>
@@ -364,7 +385,7 @@ export default function DashboardPage() {
             </div>
             <ul className="mt-4 space-y-3">
               {(alertsQuery.data?.content ?? []).map((alert) => (
-                <li key={alert.id} className="rounded-xl border border-border bg-background p-4">
+                <li key={alert.id} className="rounded-xl bg-background p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium">{alert.alertNumber}</p>

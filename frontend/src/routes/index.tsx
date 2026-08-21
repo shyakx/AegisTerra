@@ -21,6 +21,12 @@ import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import GISPage from '../pages/GISPage';
 import HouseholdsPage from '../pages/HouseholdsPage';
 import LoginPage from '../pages/LoginPage';
+import SiteLayout from '../layouts/SiteLayout';
+import HomePage from '../pages/public/HomePage';
+import AboutPage from '../pages/public/AboutPage';
+import PlatformPage from '../pages/public/PlatformPage';
+import PartnersPage from '../pages/public/PartnersPage';
+import JoinPage from '../pages/public/JoinPage';
 import InsuranceProductsPage from '../pages/InsuranceProductsPage';
 import InsuranceReportsPage from '../pages/InsuranceReportsPage';
 import PoliciesPage from '../pages/PoliciesPage';
@@ -55,9 +61,25 @@ import ClimateAlertsPage from '../pages/ClimateAlertsPage';
 import FarmClimateIntelPage from '../pages/FarmClimateIntelPage';
 import DistrictRiskPage from '../pages/DistrictRiskPage';
 import ClimateIntelJobsPage from '../pages/ClimateIntelJobsPage';
+import SatelliteIntelligencePage from '../pages/SatelliteIntelligencePage';
+import LendingPage from '../pages/LendingPage';
+import LoanDetailsPage from '../pages/LoanDetailsPage';
+import InsuredInputsPage from '../pages/InsuredInputsPage';
+import FarmerGuidancePage from '../pages/FarmerGuidancePage';
 import { Navigate } from 'react-router-dom';
 
-export const router = createBrowserRouter([
+export const router = createBrowserRouter(
+  [
+  {
+    element: <SiteLayout />,
+    children: [
+      { path: '/', element: <HomePage /> },
+      { path: '/about', element: <AboutPage /> },
+      { path: '/platform', element: <PlatformPage /> },
+      { path: '/partners', element: <PartnersPage /> },
+      { path: '/join', element: <JoinPage /> }
+    ]
+  },
   {
     path: '/login',
     element: <LoginPage />
@@ -74,10 +96,9 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: '/',
         element: <AppLayout />,
         children: [
-          { index: true, element: <DashboardPage /> },
+          { path: 'app', element: <DashboardPage /> },
           {
             element: <ProtectedRoute permission="users:read" />,
             children: [{ path: 'users', element: <UsersPage /> }]
@@ -214,11 +235,33 @@ export const router = createBrowserRouter([
               { path: 'climate-intel/farms/:farmId', element: <FarmClimateIntelPage /> }
             ]
           },
+          {
+            element: <ProtectedRoute permission="satellite:read" />,
+            children: [{ path: 'satellite', element: <SatelliteIntelligencePage /> }]
+          },
+          {
+            element: <ProtectedRoute permission="loans:read" />,
+            children: [
+              { path: 'lending', element: <LendingPage /> },
+              { path: 'lending/:id', element: <LoanDetailsPage /> }
+            ]
+          },
+          {
+            element: <ProtectedRoute permission="inputs:read" />,
+            children: [{ path: 'inputs', element: <InsuredInputsPage /> }]
+          },
+          { path: 'guidance', element: <FarmerGuidancePage /> },
           { path: 'weather', element: <Navigate to="/climate" replace /> },
-          { path: 'settings', element: <SettingsPage /> },
-          { path: '*', element: <Navigate to="/" replace /> }
+          { path: 'settings', element: <SettingsPage /> }
         ]
       }
     ]
   }
-]);
+  ],
+  {
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true
+    }
+  }
+);
