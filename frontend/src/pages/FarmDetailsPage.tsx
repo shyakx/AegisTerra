@@ -2,8 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { agriApi } from '../api/agriculture';
 import { ApiError } from '../api/client';
+import { geographyApi } from '../api/geography';
 import BoundaryMapEditor from '../components/BoundaryMapEditor';
 import { useAuth } from '../auth/AuthContext';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function FarmDetailsPage() {
   const { hasPermission } = useAuth();
@@ -15,6 +18,14 @@ export default function FarmDetailsPage() {
     queryKey: ['boundaries', id],
     queryFn: () => agriApi.listBoundaries(id),
     enabled: Boolean(id)
+  });
+  const catalogDistrictId = farmQuery.data?.districtId && UUID_RE.test(farmQuery.data.districtId)
+    ? farmQuery.data.districtId
+    : null;
+  const districtQuery = useQuery({
+    queryKey: ['district', catalogDistrictId],
+    queryFn: () => geographyApi.getDistrict(catalogDistrictId!),
+    enabled: Boolean(catalogDistrictId)
   });
 
   if (farmQuery.isLoading) return <p>Loading farm…</p>;
@@ -46,23 +57,18 @@ export default function FarmDetailsPage() {
           <Link to={`/farms/${id}/crop-history`} className="rounded-xl border border-border px-3 py-2 text-sm">
             Crop history
           </Link>
-          {hasPermission('policies:read') ? (
-            <Link to="/policies" className="rounded-xl border border-border px-3 py-2 text-sm">
-              Policies
-            </Link>
-          ) : null}
-          {hasPermission('claims:read') ? (
-            <Link to="/claims" className="rounded-xl border border-border px-3 py-2 text-sm">
-              Claims
-            </Link>
-          ) : null}
           {hasPermission('climate-intel:read') ? (
-            <Link
-              to={`/climate-intel/farms/${id}`}
-              className="rounded-xl border border-border px-3 py-2 text-sm"
-            >
-              Climate risk
-            </Link>
+            <>
+              <Link
+                to={`/climate-intel/farms/${id}`}
+                className="rounded-xl border border-border px-3 py-2 text-sm"
+              >
+                Climate risk
+              </Link>
+              <Link to="/planning" className="rounded-xl bg-primary px-3 py-2 text-sm text-white">
+                Planning outlook
+              </Link>
+            </>
           ) : null}
         </div>
       </div>
@@ -78,6 +84,26 @@ export default function FarmDetailsPage() {
             <div>
               <dt className="text-textSecondary">Crop type</dt>
               <dd>{farm.cropType ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-textSecondary">Province</dt>
+              <dd>{districtQuery.data?.provinceName ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-textSecondary">District</dt>
+              <dd>{districtQuery.data?.name ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-textSecondary">Agroecological Zone</dt>
+              <dd>{districtQuery.data?.agroecologicalZoneName ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-textSecondary">Agroecological Sub-zone</dt>
+              <dd>
+                {districtQuery.data?.agroecologicalSubzoneCode
+                  ? `${districtQuery.data.agroecologicalSubzoneCode} — ${districtQuery.data.agroecologicalSubzoneName ?? ''}`.trim()
+                  : '—'}
+              </dd>
             </div>
             <div>
               <dt className="text-textSecondary">Active boundaries</dt>

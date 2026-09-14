@@ -7,6 +7,7 @@ import com.aegisterra.platform.infrastructure.persistence.agriculture.FarmerRepo
 import com.aegisterra.platform.application.contracts.FarmRequest;
 import com.aegisterra.platform.application.contracts.FarmResponse;
 import com.aegisterra.platform.application.contracts.PageResponse;
+import com.aegisterra.platform.application.geography.GeographyReferenceValidator;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
@@ -21,15 +22,18 @@ public class FarmService {
 
     private final FarmRepository farmRepository;
     private final FarmerRepository farmerRepository;
+    private final GeographyReferenceValidator geographyReferenceValidator;
     private final AgricultureAuditHelper auditHelper;
 
     public FarmService(
         FarmRepository farmRepository,
         FarmerRepository farmerRepository,
+        GeographyReferenceValidator geographyReferenceValidator,
         AgricultureAuditHelper auditHelper
     ) {
         this.farmRepository = farmRepository;
         this.farmerRepository = farmerRepository;
+        this.geographyReferenceValidator = geographyReferenceValidator;
         this.auditHelper = auditHelper;
     }
 
@@ -71,6 +75,7 @@ public class FarmService {
 
     @Transactional
     public FarmResponse create(FarmRequest request, UUID actorId) {
+        geographyReferenceValidator.requireActiveDistrict(request.districtId());
         farmerRepository.findByIdAndDeletedFalse(request.farmerId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Farmer not found"));
         if (farmRepository.existsByFarmerIdAndFarmNameIgnoreCaseAndDeletedFalse(request.farmerId(), request.farmName().trim())) {
@@ -100,6 +105,7 @@ public class FarmService {
 
     @Transactional
     public FarmResponse update(UUID id, FarmRequest request, UUID actorId) {
+        geographyReferenceValidator.requireActiveDistrict(request.districtId());
         FarmEntity farm = require(id);
         FarmResponse old = toResponse(farm);
         if (farmRepository.existsByFarmerIdAndFarmNameIgnoreCaseAndDeletedFalseAndIdNot(

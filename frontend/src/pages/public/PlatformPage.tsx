@@ -12,11 +12,11 @@ export default function PlatformPage() {
           <Reveal x={-28} y={0}>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-200">Platform</p>
             <h1 className="font-display mt-3 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-              From zonal climate risk to partner payouts.
+              Past climate and yield learning → plans that avoid surprise losses.
             </h1>
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-emerald-50">
-              Intelligence is produced once from orbit and on the ground. Insurers, lenders, aggregators, and public
-              agencies consume it according to their mandate.
+              One shared picture of what happened, what is happening, and what is coming — for insurers, farmers, banks,
+              aggregators, and public partners. AegisTerra does not sell insurance.
             </p>
           </Reveal>
         </div>

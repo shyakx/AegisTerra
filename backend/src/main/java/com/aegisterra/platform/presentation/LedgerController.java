@@ -12,12 +12,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.aegisterra.platform.infrastructure.config.ConditionalOnPartnerOps;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@ConditionalOnPartnerOps
 @RestController
 @RequestMapping("/api/v1/ledger")
 @Tag(name = "Ledger")

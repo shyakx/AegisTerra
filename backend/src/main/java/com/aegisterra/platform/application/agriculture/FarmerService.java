@@ -9,6 +9,7 @@ import com.aegisterra.platform.infrastructure.persistence.agriculture.HouseholdR
 import com.aegisterra.platform.application.contracts.FarmerRequest;
 import com.aegisterra.platform.application.contracts.FarmerResponse;
 import com.aegisterra.platform.application.contracts.PageResponse;
+import com.aegisterra.platform.application.geography.GeographyReferenceValidator;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ public class FarmerService {
     private final HouseholdRepository householdRepository;
     private final FarmRepository farmRepository;
     private final FarmBoundaryRepository farmBoundaryRepository;
+    private final GeographyReferenceValidator geographyReferenceValidator;
     private final AgricultureAuditHelper auditHelper;
 
     public FarmerService(
@@ -36,12 +38,14 @@ public class FarmerService {
         HouseholdRepository householdRepository,
         FarmRepository farmRepository,
         FarmBoundaryRepository farmBoundaryRepository,
+        GeographyReferenceValidator geographyReferenceValidator,
         AgricultureAuditHelper auditHelper
     ) {
         this.farmerRepository = farmerRepository;
         this.householdRepository = householdRepository;
         this.farmRepository = farmRepository;
         this.farmBoundaryRepository = farmBoundaryRepository;
+        this.geographyReferenceValidator = geographyReferenceValidator;
         this.auditHelper = auditHelper;
     }
 
@@ -109,6 +113,7 @@ public class FarmerService {
 
     @Transactional
     public FarmerResponse create(FarmerRequest request, UUID actorId) {
+        geographyReferenceValidator.requireActiveDistrict(request.districtId());
         validateIdentity(request, null);
         if (request.householdId() != null) {
             householdRepository.findByIdAndDeletedFalse(request.householdId())
@@ -138,6 +143,7 @@ public class FarmerService {
 
     @Transactional
     public FarmerResponse update(UUID id, FarmerRequest request, UUID actorId) {
+        geographyReferenceValidator.requireActiveDistrict(request.districtId());
         FarmerEntity farmer = require(id);
         FarmerResponse old = toResponse(farmer);
         validateIdentity(request, id);

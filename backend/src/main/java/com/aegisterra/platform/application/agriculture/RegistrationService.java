@@ -140,6 +140,15 @@ public class RegistrationService {
 
         JsonNode farmerNode = payload.path("farmer");
         requireNode(farmerNode, "farmer");
+        JsonNode farmNode = payload.path("farm");
+        requireNode(farmNode, "farm");
+
+        UUID farmDistrictId = uuidOrNull(farmNode, "districtId");
+        UUID farmerDistrictId = uuidOrNull(farmerNode, "districtId");
+        if (farmerDistrictId == null) {
+            farmerDistrictId = farmDistrictId;
+        }
+
         var farmer = farmerService.create(new FarmerRequest(
             householdId,
             farmerNode.path("firstName").asText(),
@@ -147,7 +156,7 @@ public class RegistrationService {
             farmerNode.path("nationalId").asText(),
             farmerNode.path("phoneNumber").asText(),
             textOrNull(farmerNode, "email"),
-            uuidOrNull(farmerNode, "districtId"),
+            farmerDistrictId,
             uuidOrNull(farmerNode, "sectorId"),
             uuidOrNull(farmerNode, "cellId"),
             uuidOrNull(farmerNode, "villageId"),
@@ -155,15 +164,13 @@ public class RegistrationService {
             "registration-submit"
         ), userId);
 
-        JsonNode farmNode = payload.path("farm");
-        requireNode(farmNode, "farm");
         var farm = farmService.create(new FarmRequest(
             farmer.id(),
             textOrNull(farmNode, "farmCode"),
             farmNode.path("farmName").asText(),
             decimalOrNull(farmNode, "farmSizeHa"),
             textOrNull(farmNode, "cropType"),
-            uuidOrNull(farmNode, "districtId"),
+            farmDistrictId,
             uuidOrNull(farmNode, "sectorId"),
             uuidOrNull(farmNode, "cellId"),
             uuidOrNull(farmNode, "villageId"),
@@ -212,6 +219,7 @@ public class RegistrationService {
                     UUID.fromString(cs.path("cropId").asText()),
                     UUID.fromString(cs.path("seasonId").asText()),
                     decimalOrNull(cs, "plantedAreaHa"),
+                    decimalOrNull(cs, "yieldTHa"),
                     "PLANNED",
                     "registration-submit"
                 ), userId);

@@ -1,0 +1,107 @@
+databaseChangeLog:
+  - changeSet:
+      id: 035-crop-seasons-yield
+      author: aegisterra
+      comment: ADR-010 yield learning spine — recorded harvest yield on crop_seasons (t/ha)
+      changes:
+        - addColumn:
+            tableName: crop_seasons
+            columns:
+              - column:
+                  name: yield_t_ha
+                  type: numeric(19,4)
+                  remarks: Harvested yield in tonnes per hectare; null until recorded
+
+  - changeSet:
+      id: 035-seed-historical-seasons
+      author: aegisterra
+      comment: Season A rows 2016–2024 for multi-year yield outlook (idempotent)
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO seasons (id, code, name, start_date, end_date, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), v.code, v.name, v.start_date::date, v.end_date::date, NOW(), NOW(), 0, 'CLOSED', false
+              FROM (VALUES
+                ('2016A', 'Season A 2016', '2015-09-01', '2016-02-29'),
+                ('2017A', 'Season A 2017', '2016-09-01', '2017-02-28'),
+                ('2018A', 'Season A 2018', '2017-09-01', '2018-02-28'),
+                ('2019A', 'Season A 2019', '2018-09-01', '2019-02-28'),
+                ('2020A', 'Season A 2020', '2019-09-01', '2020-02-29'),
+                ('2021A', 'Season A 2021', '2020-09-01', '2021-02-28'),
+                ('2022A', 'Season A 2022', '2021-09-01', '2022-02-28'),
+                ('2023A', 'Season A 2023', '2022-09-01', '2023-02-28'),
+                ('2024A', 'Season A 2024', '2023-09-01', '2024-02-29')
+              ) AS v(code, name, start_date, end_date)
+              WHERE NOT EXISTS (SELECT 1 FROM seasons s WHERE s.code = v.code AND s.deleted = false);
+
+  - changeSet:
+      id: 035-seed-demo-yield-history
+      author: aegisterra
+      comment: Multi-year MAIZE/BEANS/POTATO yields on RC1 demo farms for planning outlook
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO crop_seasons (
+                id, farm_id, plot_id, crop_id, season_id, planted_area_ha, yield_t_ha,
+                created_at, updated_at, version, status, deleted
+              )
+              SELECT gen_random_uuid(),
+                     f.id,
+                     NULL,
+                     c.id,
+                     s.id,
+                     f.farm_size_ha,
+                     v.yield_t_ha::numeric,
+                     NOW(), NOW(), 0, 'HARVESTED', false
+              FROM (VALUES
+                -- farm, crop_code, season_code, yield_t_ha
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2016A', 3.40),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2017A', 3.55),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2018A', 3.20),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2019A', 3.10),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2020A', 2.85),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2021A', 3.00),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2022A', 2.70),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2023A', 2.55),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2024A', 2.40),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee301', 'MAIZE', '2025A', 2.35),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2016A', 1.45),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2017A', 1.50),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2018A', 1.35),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2019A', 1.40),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2020A', 1.20),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2021A', 1.25),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2022A', 1.15),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2023A', 1.10),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2024A', 1.05),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee302', 'BEANS', '2025A', 1.00),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2016A', 12.0),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2017A', 12.5),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2018A', 11.8),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2019A', 11.2),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2020A', 10.5),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2021A', 10.8),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2022A', 9.9),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2023A', 9.4),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2024A', 9.0),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee303', 'POTATO', '2025A', 8.7),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 'MAIZE', '2018A', 2.90),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 'MAIZE', '2020A', 2.60),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 'MAIZE', '2022A', 2.40),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee305', 'MAIZE', '2024A', 2.20),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee311', 'MAIZE', '2019A', 3.00),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee311', 'MAIZE', '2021A', 2.75),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee311', 'MAIZE', '2023A', 2.50),
+                ('eeeeeeee-eeee-eeee-eeee-eeeeeeeee311', 'MAIZE', '2025A', 2.30)
+              ) AS v(farm_id, crop_code, season_code, yield_t_ha)
+              JOIN farms f ON f.id = v.farm_id::uuid AND f.deleted = false
+              JOIN crops c ON c.code = v.crop_code AND c.deleted = false
+              JOIN seasons s ON s.code = v.season_code AND s.deleted = false
+              WHERE NOT EXISTS (
+                SELECT 1 FROM crop_seasons cs
+                WHERE cs.farm_id = f.id
+                  AND cs.crop_id = c.id
+                  AND cs.season_id = s.id
+                  AND cs.plot_id IS NULL
+                  AND cs.deleted = false
+              );

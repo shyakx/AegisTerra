@@ -63,6 +63,7 @@ public class CropSeasonService {
         entity.setCropId(request.cropId());
         entity.setSeasonId(request.seasonId());
         entity.setPlantedAreaHa(request.plantedAreaHa());
+        entity.setYieldTHa(request.yieldTHa());
         entity.setStatus(request.status() == null || request.status().isBlank() ? "PLANNED" : request.status().trim().toUpperCase());
         entity.setDeleted(false);
         entity.setCreatedBy(actorId);
@@ -82,6 +83,7 @@ public class CropSeasonService {
         entity.setCropId(request.cropId());
         entity.setSeasonId(request.seasonId());
         entity.setPlantedAreaHa(request.plantedAreaHa());
+        entity.setYieldTHa(request.yieldTHa());
         if (request.status() != null && !request.status().isBlank()) {
             entity.setStatus(request.status().trim().toUpperCase());
         }
@@ -139,6 +141,7 @@ public class CropSeasonService {
             entity.getCropId(),
             entity.getSeasonId(),
             entity.getPlantedAreaHa(),
+            entity.getYieldTHa(),
             entity.getStatus()
         );
     }

@@ -158,7 +158,7 @@ function ImportJobRow({ job }: { job: ClimateImportJob }) {
         <div>
           <p className="font-mono text-sm font-semibold tracking-tight">{job.jobNumber}</p>
           <p className="mt-1 text-xs text-textSecondary">
-            {job.jobType.replaceAll('_', ' ')} · {job.providerCode}
+            {job.jobType.replace(/_/g, ' ')} · {job.providerCode}
           </p>
         </div>
         <StatusBadge status={job.status} />

@@ -37,6 +37,7 @@ import {
   stations,
   tasks
 } from './catalog';
+import { demoGeography } from './geographyCatalog';
 import { readSessionUser, writeSessionUser } from './session';
 
 function requireUser() {
@@ -141,6 +142,15 @@ function enforceRbac(user: AuthUser, path: string, verb: string) {
     return;
   }
   if (path.startsWith('/api/v1/farmers') || path.startsWith('/api/v1/households')) {
+    need('farmers:read', 'farmers:write');
+    return;
+  }
+  if (
+    path.startsWith('/api/v1/provinces') ||
+    path.startsWith('/api/v1/districts') ||
+    path.startsWith('/api/v1/agroecological-zones') ||
+    path.startsWith('/api/v1/agroecological-subzones')
+  ) {
     need('farmers:read', 'farmers:write');
     return;
   }
@@ -448,6 +458,35 @@ export async function handleDemoRequest(
     return paged(scopedHouseholds(user));
   }
 
+  if (path === '/api/v1/provinces' && verb === 'GET') {
+    return demoGeography.provinces();
+  }
+  const provinceId = idFrom(path, '/api/v1/provinces');
+  if (provinceId && verb === 'GET') {
+    return demoGeography.province(provinceId) ?? notFound();
+  }
+  if (path === '/api/v1/districts' && verb === 'GET') {
+    return demoGeography.districts(url.searchParams.get('provinceId'));
+  }
+  const districtId = idFrom(path, '/api/v1/districts');
+  if (districtId && verb === 'GET') {
+    return demoGeography.district(districtId) ?? notFound();
+  }
+  if (path === '/api/v1/agroecological-zones' && verb === 'GET') {
+    return demoGeography.zones();
+  }
+  const zoneId = idFrom(path, '/api/v1/agroecological-zones');
+  if (zoneId && verb === 'GET') {
+    return demoGeography.zone(zoneId) ?? notFound();
+  }
+  if (path === '/api/v1/agroecological-subzones' && verb === 'GET') {
+    return demoGeography.subzones(url.searchParams.get('zoneId'), url.searchParams.get('districtId'));
+  }
+  const subzoneId = idFrom(path, '/api/v1/agroecological-subzones');
+  if (subzoneId && verb === 'GET') {
+    return demoGeography.subzone(subzoneId) ?? notFound();
+  }
+
   if (path === '/api/v1/farms' && verb === 'GET') {
     const farmerIdQ = url.searchParams.get('farmerId');
     const rows = scopedFarms(user).filter(
@@ -537,7 +576,8 @@ export async function handleDemoRequest(
         cropId: 'crop-maize',
         seasonId: 'season-a',
         plantedAreaHa: farm?.farmSizeHa ?? 1.8,
-        status: 'ACTIVE'
+        yieldTHa: 2.4,
+        status: 'HARVESTED'
       }
     ];
   }
@@ -971,6 +1011,18 @@ export async function handleDemoRequest(
   }
 
   if (path === '/api/v1/climate-intel/national/dashboard') {
+    const zoneHeat = [
+      { code: 'A', name: 'ZONE A', meanScore: 48, grade: 'MODERATE', districtCount: 1, farmCount: 3 },
+      { code: 'B', name: 'ZONE B', meanScore: 54, grade: 'HIGH', districtCount: 1, farmCount: 2 },
+      { code: 'C', name: 'ZONE C', meanScore: 81, grade: 'EXTREME', districtCount: 1, farmCount: 3 },
+      { code: 'E', name: 'ZONE E', meanScore: 72, grade: 'HIGH', districtCount: 1, farmCount: 3 }
+    ];
+    const subzoneHeat = [
+      { code: 'A1', name: 'Volcanic Highlands', zoneCode: 'A', zoneName: 'ZONE A', meanScore: 48, grade: 'MODERATE', districtCount: 1, farmCount: 3 },
+      { code: 'B2', name: 'Southern Central Plateau', zoneCode: 'B', zoneName: 'ZONE B', meanScore: 54, grade: 'HIGH', districtCount: 1, farmCount: 2 },
+      { code: 'C1', name: 'Eastern Dry Savanna', zoneCode: 'C', zoneName: 'ZONE C', meanScore: 81, grade: 'EXTREME', districtCount: 1, farmCount: 3 },
+      { code: 'E1', name: 'Northern/Highland Kigali', zoneCode: 'E', zoneName: 'ZONE E', meanScore: 72, grade: 'HIGH', districtCount: 1, farmCount: 3 }
+    ];
     return {
       farmsByGrade: {
         HIGH: farms.filter((_, i) => i % 7 === 0).length,
@@ -986,6 +1038,156 @@ export async function handleDemoRequest(
         { districtCode: 'NYAGATARE', meanScore: 81, grade: 'HIGH' }
       ],
       dataCoveragePct: 96,
+      generatedAt: new Date().toISOString(),
+      zoneHeat,
+      subzoneHeat,
+      unmappedDistrictCodes: [],
+      unmappedCount: 0
+    };
+  }
+  if (path === '/api/v1/climate-intel/aez/risk-summary') {
+    return {
+      zones: [
+        { code: 'A', name: 'ZONE A', meanScore: 48, grade: 'MODERATE', districtCount: 1, farmCount: 3 },
+        { code: 'B', name: 'ZONE B', meanScore: 54, grade: 'HIGH', districtCount: 1, farmCount: 2 },
+        { code: 'C', name: 'ZONE C', meanScore: 81, grade: 'EXTREME', districtCount: 1, farmCount: 3 },
+        { code: 'E', name: 'ZONE E', meanScore: 72, grade: 'HIGH', districtCount: 1, farmCount: 3 }
+      ],
+      subzones: [
+        { code: 'A1', name: 'Volcanic Highlands', zoneCode: 'A', zoneName: 'ZONE A', meanScore: 48, grade: 'MODERATE', districtCount: 1, farmCount: 3 },
+        { code: 'B2', name: 'Southern Central Plateau', zoneCode: 'B', zoneName: 'ZONE B', meanScore: 54, grade: 'HIGH', districtCount: 1, farmCount: 2 },
+        { code: 'C1', name: 'Eastern Dry Savanna', zoneCode: 'C', zoneName: 'ZONE C', meanScore: 81, grade: 'EXTREME', districtCount: 1, farmCount: 3 },
+        { code: 'E1', name: 'Northern/Highland Kigali', zoneCode: 'E', zoneName: 'ZONE E', meanScore: 72, grade: 'HIGH', districtCount: 1, farmCount: 3 }
+      ],
+      unmappedDistrictCodes: [],
+      unmappedCount: 0,
+      generatedAt: new Date().toISOString()
+    };
+  }
+  if (path === '/api/v1/climate-intel/aez/zones/risk-summary') {
+    return [
+      { code: 'A', name: 'ZONE A', meanScore: 48, grade: 'MODERATE', districtCount: 1, farmCount: 3 },
+      { code: 'B', name: 'ZONE B', meanScore: 54, grade: 'HIGH', districtCount: 1, farmCount: 2 },
+      { code: 'C', name: 'ZONE C', meanScore: 81, grade: 'EXTREME', districtCount: 1, farmCount: 3 },
+      { code: 'E', name: 'ZONE E', meanScore: 72, grade: 'HIGH', districtCount: 1, farmCount: 3 }
+    ];
+  }
+  if (path === '/api/v1/climate-intel/aez/subzones/risk-summary') {
+    return [
+      { code: 'A1', name: 'Volcanic Highlands', zoneCode: 'A', zoneName: 'ZONE A', meanScore: 48, grade: 'MODERATE', districtCount: 1, farmCount: 3 },
+      { code: 'B2', name: 'Southern Central Plateau', zoneCode: 'B', zoneName: 'ZONE B', meanScore: 54, grade: 'HIGH', districtCount: 1, farmCount: 2 },
+      { code: 'C1', name: 'Eastern Dry Savanna', zoneCode: 'C', zoneName: 'ZONE C', meanScore: 81, grade: 'EXTREME', districtCount: 1, farmCount: 3 },
+      { code: 'E1', name: 'Northern/Highland Kigali', zoneCode: 'E', zoneName: 'ZONE E', meanScore: 72, grade: 'HIGH', districtCount: 1, farmCount: 3 }
+    ];
+  }
+  if (path === '/api/v1/climate-intel/planning/yield-outlook') {
+    return {
+      referenceYear: 2026,
+      pastWindowStartYear: 2016,
+      pastWindowEndYear: 2023,
+      recentWindowStartYear: 2024,
+      recentWindowEndYear: 2025,
+      nationalMeanRiskScore: 63.75,
+      nationalRiskGrade: 'HIGH',
+      methodology:
+        'Past = mean yield in seasons ending years Y-10..Y-3; Recent = mean yield in Y-2..Y-1; Predicted = recent + 0.5×(recent−past) × (1 − 0.35×nationalRisk/100).',
+      generatedAt: new Date().toISOString(),
+      crops: [
+        {
+          cropCode: 'MAIZE',
+          cropName: 'Maize',
+          pastMeanYieldTHa: 3.04,
+          recentMeanYieldTHa: 2.38,
+          predictedYieldTHa: 2.05,
+          yieldChangePctRecentVsPast: -21.7,
+          outlookLabel: 'YIELD_PRESSURE',
+          narrative:
+            'For Maize, past window averaged 3.04 t/ha; recent seasons averaged 2.38 t/ha. Under current national climate risk 63.8 (HIGH), the explainable outlook for the next season is 2.05 t/ha.',
+          farmCount: 3,
+          seasonSampleCount: 14,
+          yearlySeries: [
+            { year: 2016, meanYieldTHa: 3.4, sampleCount: 1 },
+            { year: 2018, meanYieldTHa: 3.05, sampleCount: 2 },
+            { year: 2020, meanYieldTHa: 2.73, sampleCount: 2 },
+            { year: 2022, meanYieldTHa: 2.55, sampleCount: 2 },
+            { year: 2024, meanYieldTHa: 2.3, sampleCount: 2 },
+            { year: 2025, meanYieldTHa: 2.33, sampleCount: 2 }
+          ]
+        },
+        {
+          cropCode: 'BEANS',
+          cropName: 'Beans',
+          pastMeanYieldTHa: 1.3,
+          recentMeanYieldTHa: 1.03,
+          predictedYieldTHa: 0.89,
+          yieldChangePctRecentVsPast: -20.8,
+          outlookLabel: 'YIELD_PRESSURE',
+          narrative:
+            'For Beans, past window averaged 1.30 t/ha; recent seasons averaged 1.03 t/ha. Under current national climate risk 63.8 (HIGH), the explainable outlook for the next season is 0.89 t/ha.',
+          farmCount: 1,
+          seasonSampleCount: 10,
+          yearlySeries: [
+            { year: 2016, meanYieldTHa: 1.45, sampleCount: 1 },
+            { year: 2020, meanYieldTHa: 1.2, sampleCount: 1 },
+            { year: 2024, meanYieldTHa: 1.05, sampleCount: 1 },
+            { year: 2025, meanYieldTHa: 1.0, sampleCount: 1 }
+          ]
+        },
+        {
+          cropCode: 'POTATO',
+          cropName: 'Irish Potato',
+          pastMeanYieldTHa: 11.14,
+          recentMeanYieldTHa: 8.85,
+          predictedYieldTHa: 7.65,
+          yieldChangePctRecentVsPast: -20.6,
+          outlookLabel: 'YIELD_PRESSURE',
+          narrative:
+            'For Irish Potato, past window averaged 11.14 t/ha; recent seasons averaged 8.85 t/ha. Under current national climate risk 63.8 (HIGH), the explainable outlook for the next season is 7.65 t/ha.',
+          farmCount: 1,
+          seasonSampleCount: 10,
+          yearlySeries: [
+            { year: 2016, meanYieldTHa: 12.0, sampleCount: 1 },
+            { year: 2020, meanYieldTHa: 10.5, sampleCount: 1 },
+            { year: 2024, meanYieldTHa: 9.0, sampleCount: 1 },
+            { year: 2025, meanYieldTHa: 8.7, sampleCount: 1 }
+          ]
+        }
+      ]
+    };
+  }
+  if (path === '/api/v1/climate-intel/planning/ml-spike/maize') {
+    return {
+      cropCode: 'MAIZE',
+      featureRowCount: 6,
+      features: [
+        { harvestYear: 2018, meanYieldTHa: 3.05, sampleCount: 2, farmCount: 2, lag1YieldTHa: 3.4, lag2YieldTHa: null, seasonRainMm: 910, yearIndex: 2 },
+        { harvestYear: 2020, meanYieldTHa: 2.73, sampleCount: 2, farmCount: 2, lag1YieldTHa: 3.05, lag2YieldTHa: 3.4, seasonRainMm: 760, yearIndex: 4 },
+        { harvestYear: 2022, meanYieldTHa: 2.55, sampleCount: 2, farmCount: 2, lag1YieldTHa: 2.73, lag2YieldTHa: 3.05, seasonRainMm: 740, yearIndex: 6 },
+        { harvestYear: 2024, meanYieldTHa: 2.3, sampleCount: 2, farmCount: 2, lag1YieldTHa: 2.55, lag2YieldTHa: 2.73, seasonRainMm: 680, yearIndex: 8 },
+        { harvestYear: 2025, meanYieldTHa: 2.33, sampleCount: 2, farmCount: 2, lag1YieldTHa: 2.3, lag2YieldTHa: 2.55, seasonRainMm: 660, yearIndex: 9 }
+      ],
+      leaveOneYearOut: [
+        {
+          holdoutYear: 2024,
+          actualYieldTHa: 2.3,
+          naiveLastYearPred: 2.55,
+          ruleRecentMeanPred: 2.64,
+          linearLagRainPred: 2.41,
+          absErrorNaive: 0.25,
+          absErrorRule: 0.34,
+          absErrorLinear: 0.11
+        }
+      ],
+      metrics: {
+        folds: 4,
+        maeNaiveLastYear: 0.22,
+        maeRuleRecentMean: 0.28,
+        maeLinearLagRain: 0.18,
+        bestMethod: 'LINEAR_LAG_RAIN',
+        linearBeatsRule: true
+      },
+      verdict: 'LINEAR_BEATS_RULE — candidate for Stage B batch inference after real yield/climate volume grows',
+      notes: 'Demo stub for ML spike. Live API uses leave-one-year-out OLS on seeded maize + ML_SPIKE_DEMO rain.',
       generatedAt: new Date().toISOString()
     };
   }
@@ -1068,7 +1270,13 @@ export async function handleDemoRequest(
       openAlertCount: 1,
       grade: 'HIGH',
       metricsJson: null,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      provinceCode: 'KIGALI',
+      provinceName: 'Kigali City',
+      agroecologicalZoneCode: 'E',
+      agroecologicalZoneName: 'ZONE E',
+      agroecologicalSubzoneCode: 'E1',
+      agroecologicalSubzoneName: 'Northern/Highland Kigali'
     };
   }
   if (path === '/api/v1/climate-intel/map/risk') {

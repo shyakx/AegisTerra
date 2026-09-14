@@ -17,26 +17,45 @@ export default function CropHistoryPage() {
     queryFn: () => agriApi.listCropSeasons(id),
     enabled: Boolean(id)
   });
-  const cropsQuery = useQuery({ queryKey: ['crops'], queryFn: () => agriApi.listCrops(), enabled: canWrite });
-  const seasonsQuery = useQuery({ queryKey: ['seasons'], queryFn: () => agriApi.listSeasons(), enabled: canWrite });
+  const cropsQuery = useQuery({ queryKey: ['crops'], queryFn: () => agriApi.listCrops() });
+  const seasonsQuery = useQuery({ queryKey: ['seasons'], queryFn: () => agriApi.listSeasons() });
   const [cropId, setCropId] = useState('');
   const [seasonId, setSeasonId] = useState('');
+  const [yieldTHa, setYieldTHa] = useState('');
 
   const createMutation = useMutation({
-    mutationFn: () => agriApi.createCropSeason({ farmId: id, cropId, seasonId, status: 'PLANNED' }),
+    mutationFn: () =>
+      agriApi.createCropSeason({
+        farmId: id,
+        cropId,
+        seasonId,
+        yieldTHa: yieldTHa === '' ? null : Number(yieldTHa),
+        status: yieldTHa === '' ? 'PLANNED' : 'HARVESTED'
+      }),
     onSuccess: async () => {
       toast.success('Crop season added');
+      setYieldTHa('');
       await queryClient.invalidateQueries({ queryKey: ['crop-seasons', id] });
     },
     onError: (err) => toast.error(err instanceof ApiError ? err.message : 'Failed')
   });
 
+  const cropName = (cropIdValue: string) =>
+    (cropsQuery.data ?? []).find((c) => c.id === cropIdValue)?.name ?? cropIdValue.slice(0, 8);
+  const seasonName = (seasonIdValue: string) =>
+    (seasonsQuery.data ?? []).find((s) => s.id === seasonIdValue)?.name ?? seasonIdValue.slice(0, 8);
+
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-semibold">Crop history</h1>
+      <div>
+        <h1 className="text-3xl font-semibold">Crop history</h1>
+        <p className="mt-1 text-sm text-textSecondary">
+          Record harvested yield (t/ha) so planning outlook can learn past → recent → ahead by crop.
+        </p>
+      </div>
       {canWrite ? (
         <form
-          className="grid gap-3 rounded-2xl border border-border bg-surface p-4 md:grid-cols-3"
+          className="grid gap-3 rounded-2xl border border-border bg-surface p-4 md:grid-cols-4"
           onSubmit={(e) => {
             e.preventDefault();
             createMutation.mutate();
@@ -74,6 +93,18 @@ export default function CropHistoryPage() {
               ))}
             </select>
           </label>
+          <label className="text-sm">
+            Yield (t/ha)
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={yieldTHa}
+              onChange={(e) => setYieldTHa(e.target.value)}
+              placeholder="Optional"
+              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
+            />
+          </label>
           <div className="flex items-end">
             <button type="submit" className="w-full rounded-xl bg-primary px-4 py-2 text-sm text-white">
               Add record
@@ -88,9 +119,25 @@ export default function CropHistoryPage() {
         error={historyQuery.error instanceof ApiError ? historyQuery.error.message : null}
         getRowKey={(r) => r.id}
         columns={[
-          { key: 'crop', header: 'Crop ID', sortValue: (r) => r.cropId, render: (r) => r.cropId.slice(0, 8) },
-          { key: 'season', header: 'Season ID', sortValue: (r) => r.seasonId, render: (r) => r.seasonId.slice(0, 8) },
+          {
+            key: 'crop',
+            header: 'Crop',
+            sortValue: (r) => r.cropId,
+            render: (r) => cropName(r.cropId)
+          },
+          {
+            key: 'season',
+            header: 'Season',
+            sortValue: (r) => r.seasonId,
+            render: (r) => seasonName(r.seasonId)
+          },
           { key: 'area', header: 'Area', sortValue: (r) => r.plantedAreaHa ?? 0, render: (r) => r.plantedAreaHa ?? '—' },
+          {
+            key: 'yield',
+            header: 'Yield t/ha',
+            sortValue: (r) => r.yieldTHa ?? 0,
+            render: (r) => (r.yieldTHa != null ? r.yieldTHa : '—')
+          },
           { key: 'status', header: 'Status', sortValue: (r) => r.status, render: (r) => r.status }
         ]}
       />

@@ -10,5 +10,6 @@ public record CropSeasonResponse(
     UUID cropId,
     UUID seasonId,
     BigDecimal plantedAreaHa,
+    BigDecimal yieldTHa,
     String status
 ) {}

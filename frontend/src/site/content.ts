@@ -9,93 +9,48 @@ export const HERO_MANDATES = ['insurers', 'banks', 'aggregators', 'ministries', 
 
 export const CAPABILITIES = [
   {
-    title: 'National dashboard',
-    summary: 'One operating picture for farmers covered, active policies, premiums, claims paid, and growth.',
+    title: 'Past climate learning',
+    summary: 'See how climate behaved over prior seasons by district and agroecological zone.',
     points: [
-      'High-level metrics with period-on-period change',
-      'Drought, flood, pest, and heat-stress alerts at a glance',
-      'Partner directory for insurers, banks, input suppliers, and public agencies'
+      'Station observations, imports, and seasonal summaries',
+      'Comparable history for rainfall, heat, and stress indicators',
+      'Shared facts for every stakeholder — not private insurer notebooks'
     ]
   },
   {
-    title: 'Farmer registry',
-    summary: 'A verified record of smallholders, contact details, mobile money, and agro-ecological zone.',
+    title: 'Current risk picture',
+    summary: 'Farm, district, AEZ, and national risk scores updated from trusted climate data.',
     points: [
-      'Profiles used by aggregators, insurers, and lenders',
-      'Linkage to insured seed, fertilizer, and input loans',
-      'Registration via Adjustera or an aggregator field agent'
+      'Deterministic risk grades with rule lineage',
+      'Open alerts where stress is rising now',
+      'GIS and registry context for each place'
     ]
   },
   {
-    title: 'Risk intelligence',
-    summary: 'Micro-climate zoning and AI alerts so risk is visible before losses are reconstructed.',
+    title: 'Forward planning outlook',
+    summary: 'Help insurers and partners know what is coming before unexpected harvest losses.',
     points: [
-      'Northern, Southern, Eastern, Western (Zones A–E) and Kigali (Zone F)',
-      'Drought, Fall Armyworm, and crop-disease tracking',
-      'Flags for field inspection and possible index-based payouts'
+      'Past → now → ahead narrative for planning',
+      'Highest-risk districts and AEZ rollups first',
+      'Room to deepen with multi-year crop yield series'
     ]
   },
   {
-    title: 'Weather and climate',
-    summary: 'Seasonal forecasts, satellite vegetation health, and a 15-year rainfall–yield baseline.',
+    title: 'Farmer & farm registry',
+    summary: 'Verified location, crops, and seasons so risk is always tied to real holdings.',
     points: [
-      'Rainfall, humidity, and temperature for the growing season',
-      'NDVI telemetry by agro-ecological zone',
-      'Historical comparison against the current season'
+      'Province → district location with derived AEZ',
+      'Crop history on farms as the yield learning spine',
+      'Registration for aggregators and field agents'
     ]
   },
   {
-    title: 'Farm insights',
-    summary: 'Live crop performance, planting progress, and digitized crop-cutting experiments.',
+    title: 'Shared stakeholder views',
+    summary: 'Insurers, banks, aggregators, government, and partners plan from one current dataset.',
     points: [
-      'NDVI, growth stage, and yield prediction (t/ha)',
-      'Season completion by administrative sector',
-      'Field sampling logs for harvest verification'
-    ]
-  },
-  {
-    title: 'Insured inputs',
-    summary: 'Aggregators sell seed and fertilizer with an embedded premium on each bag.',
-    points: [
-      'Example: maize seed at USD 120/t uninsured versus USD 123/t insured',
-      'Volumes sold with bundled cover',
-      'Onboarding channel for farmer networks'
-    ]
-  },
-  {
-    title: 'Agricultural lending',
-    summary: 'Banks see who they financed, plot location, crop, insurance status, and repayment risk.',
-    points: [
-      'Insured loans with a small premium embedded in the facility',
-      'Crop condition and climate exposure on the loan book',
-      'Payout status used in credit monitoring'
-    ]
-  },
-  {
-    title: 'Partner insurance',
-    summary: 'AegisTerra does not underwrite. Insurers design products from climate reports, then run policy, claims, and payouts.',
-    points: [
-      'Product design and premium pricing from zonal risk',
-      'Policy administration and claim review',
-      'Portfolio monitoring for the insurer'
-    ]
-  },
-  {
-    title: 'Payouts',
-    summary: 'Index triggers move money to farmers on mobile money within a defined window.',
-    points: [
-      'Transfers when zonal yields fall below historical benchmarks',
-      'MTN and Airtel Money rails, target 14-day cycle',
-      'History by peril: drought, flood, pest, disease'
-    ]
-  },
-  {
-    title: 'Analytics and reports',
-    summary: 'Packages for insurers, lenders, ministries, and reinsurers — not a private operations notebook.',
-    points: [
-      'Triggered-payout notices for insurance companies',
-      'Loan-repayment capacity views for banks and SACCOs',
-      'CSV/PDF feeds for ministries and global reinsurers'
+      'Role-appropriate dashboards without running claims desks here',
+      'AegisTerra does not sell insurance or pay claims',
+      'Partners consume intelligence; they remain product owners'
     ]
   }
 ];
@@ -137,23 +92,23 @@ export const AGGREGATORS: NamedPartner[] = [
 export const STAKEHOLDERS = [
   {
     title: 'Farmers',
-    body: 'Contribute farm, crop, and mobile-money details. Receive cover from partners, weather alerts, risk notices, and payout messages.'
+    body: 'Share farm, crop, and location details. Receive climate alerts, risk notices, and guidance about what is coming.'
   },
   {
     title: 'Insurance companies',
-    body: 'Design and price products from climate risk reports. Collect premiums through banks and aggregators. Review claims and authorize payouts.'
+    body: 'Plan products and portfolios from past climate behaviour, current risk, and outlook — before surprise harvest losses.'
   },
   {
     title: 'Financial institutions',
-    body: 'Issue agricultural loans with insurance embedded. Monitor borrowers, crop condition, climate exposure, and payout status.'
+    body: 'See borrower farms and climate exposure when making or monitoring agricultural credit decisions.'
   },
   {
     title: 'Aggregators',
-    body: 'Register farmers and sell insured seed and fertilizer. The bag carries the premium; the network carries the risk picture.'
+    body: 'Register farmer networks and follow climate risk across the holdings they serve.'
   },
   {
     title: 'Government',
-    body: 'Consume aggregated food-security, productivity, coverage, and disaster-response intelligence.'
+    body: 'Consume aggregated food-security, productivity, and climate-risk intelligence.'
   },
   {
     title: 'Development partners',

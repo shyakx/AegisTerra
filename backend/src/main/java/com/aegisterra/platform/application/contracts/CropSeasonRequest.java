@@ -10,6 +10,7 @@ public record CropSeasonRequest(
     @NotNull UUID cropId,
     @NotNull UUID seasonId,
     BigDecimal plantedAreaHa,
+    BigDecimal yieldTHa,
     String status,
     String reason
 ) {}

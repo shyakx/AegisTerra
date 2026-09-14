@@ -2,6 +2,7 @@ package com.aegisterra.platform.presentation;
 
 import com.aegisterra.platform.application.climateintelligence.ClimateIntelligenceService;
 import com.aegisterra.platform.infrastructure.security.AegisUserPrincipal;
+import com.aegisterra.platform.application.contracts.AezRiskSummaryResponse;
 import com.aegisterra.platform.application.contracts.ClimateAlertResponse;
 import com.aegisterra.platform.application.contracts.ClimateIndicatorResponse;
 import com.aegisterra.platform.application.contracts.ClimateIntelJobResponse;
@@ -14,6 +15,8 @@ import com.aegisterra.platform.application.contracts.PageResponse;
 import com.aegisterra.platform.application.contracts.RecalculateClimateIntelRequest;
 import com.aegisterra.platform.application.contracts.SeasonSummaryResponse;
 import com.aegisterra.platform.application.contracts.WeatherSummaryResponse;
+import com.aegisterra.platform.application.contracts.YieldClimateOutlookResponse;
+import com.aegisterra.platform.application.contracts.MaizeYieldMlSpikeResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.Instant;
 import java.util.List;
@@ -22,7 +25,9 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -49,6 +54,46 @@ public class ClimateIntelligenceController {
     @PreAuthorize("hasAuthority('climate-intel:read')")
     public NationalRiskDashboardResponse nationalDashboard() {
         return intelligenceService.nationalDashboard();
+    }
+
+    @GetMapping("/aez/risk-summary")
+    @PreAuthorize("hasAuthority('climate-intel:read')")
+    public AezRiskSummaryResponse aezRiskSummary() {
+        return intelligenceService.aezRiskSummary();
+    }
+
+    @GetMapping("/aez/zones/risk-summary")
+    @PreAuthorize("hasAuthority('climate-intel:read')")
+    public List<AezRiskSummaryResponse.ZoneHeat> aezZoneRiskSummary() {
+        return intelligenceService.aezRiskSummary().zones();
+    }
+
+    @GetMapping("/aez/subzones/risk-summary")
+    @PreAuthorize("hasAuthority('climate-intel:read')")
+    public List<AezRiskSummaryResponse.SubzoneHeat> aezSubzoneRiskSummary() {
+        return intelligenceService.aezRiskSummary().subzones();
+    }
+
+    @GetMapping("/planning/yield-outlook")
+    @PreAuthorize("hasAuthority('climate-intel:read')")
+    public YieldClimateOutlookResponse yieldClimateOutlook() {
+        return intelligenceService.yieldClimateOutlook();
+    }
+
+    @GetMapping(value = "/planning/yield-outlook.csv", produces = "text/csv")
+    @PreAuthorize("hasAuthority('climate-intel:read')")
+    public ResponseEntity<String> yieldClimateOutlookCsv() {
+        String csv = intelligenceService.yieldClimateOutlookCsv();
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"aegisterra-yield-outlook.csv\"")
+            .contentType(new MediaType("text", "csv"))
+            .body(csv);
+    }
+
+    @GetMapping("/planning/ml-spike/maize")
+    @PreAuthorize("hasAuthority('climate-intel:read')")
+    public MaizeYieldMlSpikeResponse maizeYieldMlSpike() {
+        return intelligenceService.maizeYieldMlSpike();
     }
 
     @GetMapping("/farms/{farmId}/risk-score")

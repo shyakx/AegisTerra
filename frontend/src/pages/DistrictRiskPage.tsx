@@ -43,6 +43,18 @@ export default function DistrictRiskPage() {
             <Stat label="P90 score" value={p.p90Score != null ? p.p90Score.toFixed(1) : '—'} />
             <Stat label="Farms / alerts" value={`${p.farmCount} / ${p.openAlertCount}`} />
           </section>
+          <section className="grid gap-4 rounded-2xl border border-border bg-surface p-5 sm:grid-cols-3">
+            <Stat label="Province" value={p.provinceName ?? p.provinceCode ?? '—'} />
+            <Stat label="Agroecological Zone" value={p.agroecologicalZoneName ?? p.agroecologicalZoneCode ?? '—'} />
+            <Stat
+              label="Agroecological Sub-zone"
+              value={
+                p.agroecologicalSubzoneCode
+                  ? `${p.agroecologicalSubzoneCode}${p.agroecologicalSubzoneName ? ` — ${p.agroecologicalSubzoneName}` : ''}`
+                  : '—'
+              }
+            />
+          </section>
           {p.metricsJson ? (
             <pre className="overflow-auto rounded-2xl border border-border bg-surface p-4 text-xs">
               {pretty(p.metricsJson)}

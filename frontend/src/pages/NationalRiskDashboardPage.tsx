@@ -17,6 +17,8 @@ export default function NationalRiskDashboardPage() {
 
   const d = dashQuery.data;
   const gradeEntries = Object.entries(d?.farmsByGrade ?? {});
+  const zones = d?.zoneHeat ?? [];
+  const subzones = d?.subzoneHeat ?? [];
 
   return (
     <div className="space-y-6">
@@ -24,7 +26,7 @@ export default function NationalRiskDashboardPage() {
         photo={PHOTOS.earthNight}
         eyebrow="Climate intelligence"
         title="National risk dashboard"
-        description="Deterministic risk grades, alerts, and district heat from Climate Data aggregates."
+        description="Deterministic risk grades, alerts, district heat, and agroecological zone rollups from Climate Data aggregates."
         actions={
           <>
             <Link to="/climate" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
@@ -88,6 +90,69 @@ export default function NationalRiskDashboardPage() {
               <li className="text-sm text-textSecondary">No district rollups</li>
             ) : null}
           </ul>
+        </div>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-surface p-6">
+          <h2 className="text-lg font-semibold">Agroecological zone risk</h2>
+          <p className="mt-1 text-sm text-textSecondary">
+            Mean of latest district risk scores mapped through the AEZ catalog.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {zones.map((row) => (
+              <li key={row.code} className="flex justify-between gap-3 text-sm">
+                <span>
+                  <span className="font-medium">{row.code}</span>
+                  <span className="text-textSecondary"> · {row.name}</span>
+                  <span className="block text-xs text-textSecondary">
+                    {row.districtCount} district{row.districtCount === 1 ? '' : 's'}
+                  </span>
+                </span>
+                <span className="shrink-0">
+                  {row.grade ?? '—'} · {row.meanScore != null ? row.meanScore.toFixed(1) : '—'}
+                </span>
+              </li>
+            ))}
+            {!dashQuery.isLoading && zones.length === 0 ? (
+              <li className="text-sm text-textSecondary">
+                No mapped AEZ rollups yet. District climate codes must match the geography catalog.
+              </li>
+            ) : null}
+          </ul>
+        </div>
+        <div className="rounded-2xl border border-border bg-surface p-6">
+          <h2 className="text-lg font-semibold">Agroecological sub-zone risk</h2>
+          <p className="mt-1 text-sm text-textSecondary">Same latest-district aggregation, grouped by sub-zone.</p>
+          <ul className="mt-4 max-h-80 space-y-2 overflow-auto">
+            {subzones.map((row) => (
+              <li key={row.code} className="flex justify-between gap-3 text-sm">
+                <span>
+                  <span className="font-medium">{row.code}</span>
+                  <span className="text-textSecondary"> · {row.name}</span>
+                  <span className="block text-xs text-textSecondary">
+                    Zone {row.zoneCode} · {row.districtCount} district{row.districtCount === 1 ? '' : 's'}
+                  </span>
+                </span>
+                <span className="shrink-0">
+                  {row.grade ?? '—'} · {row.meanScore != null ? row.meanScore.toFixed(1) : '—'}
+                </span>
+              </li>
+            ))}
+            {!dashQuery.isLoading && subzones.length === 0 ? (
+              <li className="text-sm text-textSecondary">No mapped sub-zone rollups yet.</li>
+            ) : null}
+          </ul>
+          {(d?.unmappedCount ?? 0) > 0 ? (
+            <p className="mt-4 text-xs text-textSecondary">
+              {d?.unmappedCount} unmapped climate district code
+              {d?.unmappedCount === 1 ? '' : 's'} excluded from AEZ averages
+              {d?.unmappedDistrictCodes?.length
+                ? ` (${d.unmappedDistrictCodes.slice(0, 6).join(', ')}${(d.unmappedDistrictCodes.length ?? 0) > 6 ? '…' : ''})`
+                : ''}
+              .
+            </p>
+          ) : null}
         </div>
       </section>
     </div>

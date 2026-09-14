@@ -1,23 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
-  Activity,
   AlertTriangle,
   Bell,
-  ClipboardList,
   CloudSun,
   MapPinned,
-  ShieldCheck,
-  Users,
-  Wallet,
-  Landmark
+  TrendingUp,
+  Users
 } from 'lucide-react';
 import { executiveApi } from '../api/executive';
 import { climateApi } from '../api/climate';
 import { climateIntelApi } from '../api/climateIntel';
 import { agriApi } from '../api/agriculture';
-import { claimsApi } from '../api/claims';
-import { insuranceApi } from '../api/insurance';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { KpiCard } from '../components/KpiCard';
@@ -27,15 +21,7 @@ import { roleDashboardMeta, roleQuickLinks, showsFocus } from '../navigation/rol
 import { PHOTOS } from '../media/photos';
 import { WorkspaceBanner } from '../visuals/WorkspaceBanner';
 
-const EXECUTIVE_PERMS = [
-  'farmers:read',
-  'policies:read',
-  'claims:read',
-  'settlements:read',
-  'climate-intel:read',
-  'climate:read',
-  'loans:read'
-] as const;
+const EXECUTIVE_PERMS = ['farmers:read', 'climate-intel:read', 'climate:read', 'farms:read'] as const;
 
 export default function DashboardPage() {
   const { user, hasPermission, hasAnyPermission } = useAuth();
@@ -77,16 +63,6 @@ export default function DashboardPage() {
     queryFn: () => agriApi.searchFarms({ page: 0, size: 20 }),
     enabled: showsFocus(meta, 'farmer') && hasPermission('farms:read')
   });
-  const farmerPoliciesQuery = useQuery({
-    queryKey: ['farmer-home-policies'],
-    queryFn: () => insuranceApi.searchPolicies({ page: 0, size: 20 }),
-    enabled: showsFocus(meta, 'farmer') && hasPermission('policies:read')
-  });
-  const farmerClaimsQuery = useQuery({
-    queryKey: ['farmer-home-claims'],
-    queryFn: () => claimsApi.search({ page: 0, size: 20 }),
-    enabled: showsFocus(meta, 'farmer') && hasPermission('claims:read')
-  });
 
   const o = overviewQuery.data;
   const gradeEntries = Object.entries(o?.climate?.farmsByRiskGrade ?? {});
@@ -114,7 +90,7 @@ export default function DashboardPage() {
           description={meta.description}
           actions={headerActions}
         />
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="My coverage">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="My farm">
           <KpiCard
             label="My profile"
             value={me ? `${me.firstName} ${me.lastName}` : '—'}
@@ -131,20 +107,12 @@ export default function DashboardPage() {
             to="/farms"
           />
           <KpiCard
-            label="My policies"
-            value={fmt(farmerPoliciesQuery.data?.totalElements)}
-            detail="Active cover"
-            icon={ShieldCheck}
-            to="/policies"
+            label="Planning outlook"
+            value="Open"
+            detail="Past → now → ahead"
+            icon={TrendingUp}
+            to="/planning"
             tone="success"
-          />
-          <KpiCard
-            label="My claims"
-            value={fmt(farmerClaimsQuery.data?.totalElements)}
-            detail="Loss events"
-            icon={ClipboardList}
-            to="/claims"
-            tone="warning"
           />
         </section>
         <section className="rounded-2xl bg-surface p-6">
@@ -177,7 +145,7 @@ export default function DashboardPage() {
 
       {!canExecutive ? (
         <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-textSecondary" role="status">
-          Your role does not include executive overview data. Use the modules available in the navigation.
+          Your role does not include overview data. Use the planning and climate modules in the navigation.
         </p>
       ) : null}
 
@@ -185,119 +153,64 @@ export default function DashboardPage() {
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-warning" role="status">
           {overviewQuery.error instanceof ApiError
             ? `${overviewQuery.error.message} — showing available module links below.`
-            : 'Executive overview API unavailable; use module dashboards.'}
+            : 'Overview API unavailable; use climate and planning dashboards.'}
         </p>
       ) : null}
 
-      {(showsFocus(meta, 'portfolio') || showsFocus(meta, 'insurance') || showsFocus(meta, 'finance') || showsFocus(meta, 'support')) && (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Role KPIs">
-          {(showsFocus(meta, 'portfolio') || showsFocus(meta, 'support')) && hasPermission('farmers:read') ? (
-            <KpiCard
-              label="Farmers"
-              value={fmt(o?.farmers?.total)}
-              detail={`${fmt(o?.farmers?.active)} active`}
-              icon={Users}
-              to="/farmers"
-              tone="info"
-            />
-          ) : null}
-          {(showsFocus(meta, 'insurance') || showsFocus(meta, 'portfolio') || showsFocus(meta, 'support')) &&
-          hasPermission('policies:read') ? (
-            <KpiCard
-              label="Active policies"
-              value={fmt(o?.policies?.active ?? o?.policies?.total)}
-              detail={`${fmt(o?.policies?.total)} total`}
-              icon={ShieldCheck}
-              to="/policies"
-              tone="success"
-            />
-          ) : null}
-          {(showsFocus(meta, 'insurance') || showsFocus(meta, 'finance') || showsFocus(meta, 'support')) &&
-          hasPermission('claims:read') ? (
-            <KpiCard
-              label="Open claims"
-              value={fmt(o?.claims?.open ?? o?.claims?.total)}
-              detail={`${fmt(o?.claims?.total)} total`}
-              icon={ClipboardList}
-              to="/claims"
-              tone="warning"
-            />
-          ) : null}
-          {showsFocus(meta, 'lending') && hasPermission('loans:read') ? (
-            <KpiCard
-              label="Insured loans"
-              value="Open"
-              detail="Climate-informed agricultural credit"
-              icon={Landmark}
-              to="/lending"
-              tone="info"
-            />
-          ) : null}
-          {(showsFocus(meta, 'finance') || showsFocus(meta, 'portfolio')) && hasPermission('settlements:read') ? (
-            <KpiCard
-              label="Settlements pending"
-              value={fmt(o?.settlements?.pending)}
-              detail={
-                o?.settlements?.pendingAmount != null
-                  ? `${Number(o.settlements.pendingAmount).toLocaleString()} ${o.settlements.currency ?? 'RWF'}`
-                  : `${fmt(o?.settlements?.completed)} completed`
-              }
-              icon={Wallet}
-              to="/settlements/dashboard"
-            />
-          ) : null}
-          {showsFocus(meta, 'support') && hasPermission('users:read') ? (
-            <KpiCard label="User admin" value="Open" detail="Lookup & assistance" icon={Users} to="/users" />
-          ) : null}
-        </section>
-      )}
-
-      {(showsFocus(meta, 'ops') || showsFocus(meta, 'climate') || showsFocus(meta, 'portfolio')) && (
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Operations KPIs">
-          {(showsFocus(meta, 'portfolio') || showsFocus(meta, 'ops')) && hasPermission('farms:read') ? (
-            <KpiCard
-              label="Farms"
-              value={fmt(o?.farms?.total)}
-              detail={`${fmt(o?.farms?.withBoundary)} with boundary`}
-              icon={MapPinned}
-              to="/farms"
-            />
-          ) : null}
-          {showsFocus(meta, 'climate') && hasPermission('climate:read') ? (
-            <KpiCard
-              label="Climate stations"
-              value={fmt(o?.climate?.stations)}
-              detail={`${fmt(o?.climate?.recentObservations)} recent obs`}
-              icon={CloudSun}
-              to="/climate"
-              tone="info"
-            />
-          ) : null}
-          {showsFocus(meta, 'climate') &&
-          (hasPermission('alerts:climate') || hasPermission('climate-intel:read')) ? (
-            <KpiCard
-              label="Open climate alerts"
-              value={fmt(o?.climate?.openAlerts)}
-              detail={`${fmt(o?.climate?.criticalAlerts)} critical`}
-              icon={AlertTriangle}
-              to="/climate-intel/alerts"
-              tone="danger"
-            />
-          ) : null}
-          {showsFocus(meta, 'ops') && hasPermission('tasks:read') ? (
-            <KpiCard
-              label="Pending tasks"
-              value={fmt(o?.tasks?.pending)}
-              detail={`${fmt(o?.notifications?.unread)} unread notifications`}
-              icon={Activity}
-              to="/tasks"
-            />
-          ) : null}
-          {hasPermission('ledger:read') && showsFocus(meta, 'finance') ? (
-            <KpiCard label="Ledger" value="Open" detail="Payment journal" icon={Wallet} to="/ledger" />
-          ) : null}
-        </section>
-      )}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Planning KPIs">
+        {hasPermission('farmers:read') ? (
+          <KpiCard
+            label="Farmers"
+            value={fmt(o?.farmers?.total)}
+            detail={`${fmt(o?.farmers?.active)} active`}
+            icon={Users}
+            to="/farmers"
+            tone="info"
+          />
+        ) : null}
+        {hasPermission('farms:read') ? (
+          <KpiCard
+            label="Farms"
+            value={fmt(o?.farms?.total)}
+            detail={`${fmt(o?.farms?.withBoundary)} with boundary`}
+            icon={MapPinned}
+            to="/farms"
+          />
+        ) : null}
+        {hasPermission('climate:read') ? (
+          <KpiCard
+            label="Climate stations"
+            value={fmt(o?.climate?.stations)}
+            detail={`${fmt(o?.climate?.recentObservations)} recent obs`}
+            icon={CloudSun}
+            to="/climate"
+            tone="info"
+          />
+        ) : null}
+        {hasPermission('climate-intel:read') || hasPermission('alerts:climate') ? (
+          <KpiCard
+            label="Open climate alerts"
+            value={fmt(o?.climate?.openAlerts)}
+            detail={`${fmt(o?.climate?.criticalAlerts)} critical`}
+            icon={AlertTriangle}
+            to="/climate-intel/alerts"
+            tone="danger"
+          />
+        ) : null}
+        {hasPermission('climate-intel:read') ? (
+          <KpiCard
+            label="Planning outlook"
+            value="Open"
+            detail="Past → now → ahead"
+            icon={TrendingUp}
+            to="/planning"
+            tone="success"
+          />
+        ) : null}
+        {showsFocus(meta, 'support') && hasPermission('users:read') ? (
+          <KpiCard label="User admin" value="Open" detail="Lookup & assistance" icon={Users} to="/users" />
+        ) : null}
+      </section>
 
       <section className="rounded-2xl bg-surface p-6">
         <h2 className="text-lg font-semibold">Workspace shortcuts</h2>

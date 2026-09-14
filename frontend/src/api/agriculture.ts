@@ -36,6 +36,7 @@ export type Farm = {
   farmName: string;
   farmSizeHa: number | null;
   cropType: string | null;
+  districtId?: string | null;
   status: string;
 };
 
@@ -82,6 +83,7 @@ export type CropSeason = {
   cropId: string;
   seasonId: string;
   plantedAreaHa: number | null;
+  yieldTHa: number | null;
   status: string;
 };
 

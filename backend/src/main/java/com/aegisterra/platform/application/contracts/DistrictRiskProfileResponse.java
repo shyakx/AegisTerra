@@ -10,5 +10,11 @@ public record DistrictRiskProfileResponse(
     int openAlertCount,
     String grade,
     String metricsJson,
-    Instant generatedAt
+    Instant generatedAt,
+    String provinceCode,
+    String provinceName,
+    String agroecologicalZoneCode,
+    String agroecologicalZoneName,
+    String agroecologicalSubzoneCode,
+    String agroecologicalSubzoneName
 ) {}

@@ -42,7 +42,7 @@ info:
   app:
     name: AegisTerra Platform
     version: ${aegisterra.version}
-    description: National agricultural insurance platform
+    description: Climate and yield intelligence for agricultural risk planning
 
 springdoc:
   api-docs:
@@ -52,6 +52,9 @@ springdoc:
 
 aegisterra:
   version: 1.0.0
+  # ADR-010: partner insurance ops APIs off by default (claims, settlements, policies, workflow, lending).
+  modules:
+    partner-ops: false
   security:
     jwt:
       secret: ${AEGISTERRA_JWT_SECRET:local-only-change-me-aegisterra-jwt-secret-key-32bytes-min}

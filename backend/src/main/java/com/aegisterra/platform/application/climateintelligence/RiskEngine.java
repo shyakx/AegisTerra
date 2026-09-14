@@ -11,6 +11,8 @@ import com.aegisterra.platform.domain.events.DomainEventTypes;
 import com.aegisterra.platform.domain.events.PlatformDomainEvent;
 import com.aegisterra.platform.infrastructure.persistence.agriculture.FarmEntity;
 import com.aegisterra.platform.infrastructure.persistence.agriculture.FarmRepository;
+import com.aegisterra.platform.infrastructure.persistence.geography.DistrictEntity;
+import com.aegisterra.platform.infrastructure.persistence.geography.DistrictRepository;
 import com.aegisterra.platform.infrastructure.persistence.climate.RiskScoreEntity;
 import com.aegisterra.platform.infrastructure.persistence.climate.RiskScoreRepository;
 import com.aegisterra.platform.infrastructure.persistence.climate.WeatherObservationEntity;
@@ -50,6 +52,7 @@ public class RiskEngine {
     private final FarmClimateProfileRepository profileRepository;
     private final DistrictRiskSnapshotRepository districtRiskSnapshotRepository;
     private final FarmRepository farmRepository;
+    private final DistrictRepository districtRepository;
     private final ClimateAlertNumberGenerator numberGenerator;
     private final EventBus eventBus;
     private final ObjectMapper objectMapper;
@@ -63,6 +66,7 @@ public class RiskEngine {
         FarmClimateProfileRepository profileRepository,
         DistrictRiskSnapshotRepository districtRiskSnapshotRepository,
         FarmRepository farmRepository,
+        DistrictRepository districtRepository,
         ClimateAlertNumberGenerator numberGenerator,
         EventBus eventBus,
         ObjectMapper objectMapper
@@ -75,6 +79,7 @@ public class RiskEngine {
         this.profileRepository = profileRepository;
         this.districtRiskSnapshotRepository = districtRiskSnapshotRepository;
         this.farmRepository = farmRepository;
+        this.districtRepository = districtRepository;
         this.numberGenerator = numberGenerator;
         this.eventBus = eventBus;
         this.objectMapper = objectMapper;
@@ -113,6 +118,9 @@ public class RiskEngine {
         double confidence = station == null || obs.isEmpty() ? 0.25 : Math.min(1.0, obs.size() / 20.0);
         RiskGrade grade = obs.isEmpty() ? RiskGrade.INSUFFICIENT_DATA : RiskGrade.fromScore(score);
 
+        FarmEntity farm = farmRepository.findByIdAndDeletedFalse(farmId).orElse(null);
+        String districtCode = resolveDistrictCode(farm, station);
+
         persistIndicator(IndicatorType.DROUGHT, "FARM", farmId.toString(), windowStart, windowEnd,
             droughtNorm, severityFromNorm(droughtNorm), rules, actorId);
         persistIndicator(IndicatorType.FLOOD, "FARM", farmId.toString(), windowStart, windowEnd,
@@ -123,17 +131,12 @@ public class RiskEngine {
         if (droughtNorm >= thresholds.droughtWarning) {
             raiseAlert(AlertType.DROUGHT, droughtNorm >= thresholds.droughtSevere
                     ? AlertSeverity.CRITICAL : AlertSeverity.WARNING,
-                "FARM", farmId.toString(), farmId, null, rules, Map.of("droughtNorm", droughtNorm), actorId);
+                "FARM", farmId.toString(), farmId, districtCode, rules, Map.of("droughtNorm", droughtNorm), actorId);
         }
         if (floodNorm >= 0.5) {
             raiseAlert(AlertType.FLOOD, floodNorm >= 0.8 ? AlertSeverity.CRITICAL : AlertSeverity.WARNING,
-                "FARM", farmId.toString(), farmId, null, rules, Map.of("floodNorm", floodNorm), actorId);
+                "FARM", farmId.toString(), farmId, districtCode, rules, Map.of("floodNorm", floodNorm), actorId);
         }
-
-        FarmEntity farm = farmRepository.findByIdAndDeletedFalse(farmId).orElse(null);
-        String districtCode = farm == null || farm.getDistrictId() == null
-            ? (station == null ? null : station.getDistrictCode())
-            : farm.getDistrictId().toString();
 
         RiskScoreEntity scoreEntity = new RiskScoreEntity();
         scoreEntity.setFarmId(farmId);
@@ -234,6 +237,21 @@ public class RiskEngine {
         snap.setDeleted(false);
         snap.setStatus("ACTIVE");
         districtRiskSnapshotRepository.save(snap);
+    }
+
+    /**
+     * Climate district identity is {@code districts.code}, never a UUID string.
+     * Unresolved or deleted district IDs fall back to the station code (same as a missing farm district).
+     */
+    private String resolveDistrictCode(FarmEntity farm, WeatherStationEntity station) {
+        if (farm != null && farm.getDistrictId() != null) {
+            Optional<String> code = districtRepository.findByIdAndDeletedFalse(farm.getDistrictId())
+                .map(DistrictEntity::getCode);
+            if (code.isPresent()) {
+                return code.get();
+            }
+        }
+        return station == null ? null : station.getDistrictCode();
     }
 
     private WeatherStationEntity nearestStation() {

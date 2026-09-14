@@ -2,70 +2,71 @@ export type RoleDashboardMeta = {
   eyebrow: string;
   title: string;
   description: string;
-  focus: Array<'portfolio' | 'insurance' | 'finance' | 'climate' | 'ops' | 'support' | 'farmer' | 'lending'>;
+  focus: Array<'portfolio' | 'climate' | 'farmer' | 'support'>;
 };
 
 const META: Record<string, RoleDashboardMeta> = {
   SYSTEM_ADMIN: {
-    eyebrow: 'Climate risk intelligence',
-    title: 'National risk backbone',
+    eyebrow: 'Climate & yield intelligence',
+    title: 'Plan ahead from shared data',
     description:
-      'AegisTerra does not sell insurance. It fuses climate, satellite, and farm data so insurers, lenders, aggregators, and government share one risk picture.',
-    focus: ['climate', 'portfolio', 'insurance', 'lending', 'ops']
+      'AegisTerra helps insurers and stakeholders see past climate and yield patterns, current risk, and what is likely coming — not run a full insurance company.',
+    focus: ['climate', 'portfolio']
   },
   INSURANCE_ADMIN: {
-    eyebrow: 'Partner insurer',
-    title: 'Product design from climate risk',
-    description: 'Use localized climate risk reports to design products, price premiums, and administer policies.',
-    focus: ['climate', 'insurance', 'portfolio', 'ops']
+    eyebrow: 'Insurer planning',
+    title: 'Know what is coming before loss',
+    description:
+      'Use historical climate behaviour, current risk scores, and outlook views to design cover and manage portfolio exposure.',
+    focus: ['climate', 'portfolio']
   },
   INSURANCE_OFFICER: {
-    eyebrow: 'Partner insurer',
-    title: 'Policy and claims administration',
-    description: 'Administer partner policies and claims against climate-verified farm records.',
-    focus: ['insurance', 'climate', 'ops']
+    eyebrow: 'Insurer planning',
+    title: 'Climate risk for your book',
+    description: 'Monitor district and farm climate risk so unexpected harvest losses are less surprising.',
+    focus: ['climate', 'portfolio']
   },
   FI_OFFICER: {
-    eyebrow: 'Financial institution',
-    title: 'Agricultural lending',
-    description: 'Insured loans, borrower crop condition, climate exposure, and payout status.',
-    focus: ['lending', 'climate', 'finance', 'ops']
+    eyebrow: 'Lender planning',
+    title: 'Climate exposure on agricultural credit',
+    description: 'See borrower farms, climate risk, and outlook before committing or monitoring credit.',
+    focus: ['climate', 'portfolio']
   },
   GOVERNMENT_ANALYST: {
     eyebrow: 'Government',
-    title: 'Food security and climate risk',
-    description: 'Aggregated coverage, productivity, climate risk, and disaster-response intelligence.',
-    focus: ['climate', 'portfolio', 'insurance']
+    title: 'National climate and production outlook',
+    description: 'Aggregated climate risk, AEZ views, and farmer registry for food-security planning.',
+    focus: ['climate', 'portfolio']
   },
   DEVELOPMENT_PARTNER: {
     eyebrow: 'Development partner',
-    title: 'Programme intelligence',
-    description: 'Aggregated agricultural and climate statistics for project monitoring and investment planning.',
+    title: 'Programme climate intelligence',
+    description: 'Shared national climate and yield-oriented statistics for programme planning.',
     focus: ['climate', 'portfolio']
   },
   AGGREGATOR: {
     eyebrow: 'Aggregator',
-    title: 'Farmer networks and insured inputs',
-    description: 'Register farmers and sell seed or fertilizer with an embedded insurance premium.',
-    focus: ['portfolio', 'ops']
+    title: 'Network farms and climate outlook',
+    description: 'Register farmers and farms, then follow climate risk across your network.',
+    focus: ['portfolio', 'climate']
   },
   FARMER: {
     eyebrow: 'My farm',
-    title: 'Coverage and guidance',
-    description: 'Your profile, farms, partner cover, weather alerts, and recommendations.',
+    title: 'What is happening and what is coming',
+    description: 'Your farms, guidance, and climate outlook so you can see risk early.',
     focus: ['farmer']
   },
   AUDITOR: {
     eyebrow: 'Assurance',
-    title: 'Oversight',
-    description: 'Read-only view across farmer data, partner insurance, lending, and climate intelligence.',
-    focus: ['portfolio', 'insurance', 'finance', 'climate', 'lending']
+    title: 'Read-only planning view',
+    description: 'Inspect registry and climate intelligence used for stakeholder planning.',
+    focus: ['climate', 'portfolio']
   },
   SUPPORT: {
     eyebrow: 'Support',
-    title: 'Assistance overview',
-    description: 'Lookup for operators, farmers, policies, and claims.',
-    focus: ['support', 'ops']
+    title: 'Help with planning tools',
+    description: 'Assist users with registry, climate data, and outlook screens.',
+    focus: ['support', 'portfolio']
   }
 };
 
@@ -84,68 +85,19 @@ export function showsFocus(meta: RoleDashboardMeta, band: RoleDashboardMeta['foc
 export type QuickLink = { to: string; label: string; permission?: string };
 
 export function roleQuickLinks(role: string | undefined, farmerId?: string | null): QuickLink[] {
-  switch (role) {
-    case 'INSURANCE_ADMIN':
-      return [
-        { to: '/climate-intel', label: 'Climate risk reports', permission: 'climate-intel:read' },
-        { to: '/insurance/products', label: 'Products', permission: 'policies:read' },
-        { to: '/policies', label: 'Policies', permission: 'policies:read' },
-        { to: '/claims', label: 'Claims', permission: 'claims:read' }
-      ];
-    case 'INSURANCE_OFFICER':
-      return [
-        { to: '/climate-intel', label: 'Climate risk', permission: 'climate-intel:read' },
-        { to: '/claims', label: 'Claims', permission: 'claims:read' },
-        { to: '/policies', label: 'Policies', permission: 'policies:read' }
-      ];
-    case 'FI_OFFICER':
-      return [
-        { to: '/lending', label: 'Insured loans', permission: 'loans:read' },
-        { to: '/climate-intel', label: 'Climate risk', permission: 'climate-intel:read' },
-        { to: '/farmers', label: 'Borrowers', permission: 'farmers:read' },
-        { to: '/settlements', label: 'Payout status', permission: 'settlements:read' }
-      ];
-    case 'GOVERNMENT_ANALYST':
-    case 'DEVELOPMENT_PARTNER':
-      return [
-        { to: '/climate-intel', label: 'National risk', permission: 'climate-intel:read' },
-        { to: '/satellite', label: 'Satellite', permission: 'satellite:read' },
-        { to: '/climate-intel/alerts', label: 'Alerts', permission: 'climate-intel:read' },
-        { to: '/gis', label: 'GIS', permission: 'farms:read' }
-      ];
-    case 'AGGREGATOR':
-      return [
-        { to: '/farmers/register', label: 'Register farmer', permission: 'farmers:write' },
-        { to: '/inputs', label: 'Insured inputs', permission: 'inputs:read' },
-        { to: '/farmers', label: 'Farmers', permission: 'farmers:read' }
-      ];
-    case 'FARMER':
-      return [
-        { to: farmerId ? `/farmers/${farmerId}` : '/farmers', label: 'My profile', permission: 'farmers:read' },
-        { to: '/guidance', label: 'Guidance', permission: 'notifications:read' },
-        { to: '/farms', label: 'My farms', permission: 'farms:read' },
-        { to: '/policies', label: 'My policies', permission: 'policies:read' }
-      ];
-    case 'AUDITOR':
-      return [
-        { to: '/climate-intel', label: 'Climate risk', permission: 'climate-intel:read' },
-        { to: '/lending', label: 'Loans', permission: 'loans:read' },
-        { to: '/claims', label: 'Claims', permission: 'claims:read' }
-      ];
-    case 'SUPPORT':
-      return [
-        { to: '/users', label: 'Users', permission: 'users:read' },
-        { to: '/farmers', label: 'Farmers', permission: 'farmers:read' },
-        { to: '/policies', label: 'Policies', permission: 'policies:read' }
-      ];
-    case 'SYSTEM_ADMIN':
-    default:
-      return [
-        { to: '/climate-intel', label: 'Risk intelligence', permission: 'climate-intel:read' },
-        { to: '/satellite', label: 'Satellite', permission: 'satellite:read' },
-        { to: '/lending', label: 'Lending', permission: 'loans:read' },
-        { to: '/farmers', label: 'Farmers', permission: 'farmers:read' },
-        { to: '/policies', label: 'Policies', permission: 'policies:read' }
-      ];
+  if (role === 'FARMER') {
+    return [
+      { to: farmerId ? `/farmers/${farmerId}` : '/farmers', label: 'My profile', permission: 'farmers:read' },
+      { to: '/planning', label: 'Planning outlook' },
+      { to: '/farms', label: 'My farms', permission: 'farms:read' },
+      { to: '/guidance', label: 'Guidance', permission: 'notifications:read' }
+    ];
   }
+  return [
+    { to: '/planning', label: 'Planning outlook' },
+    { to: '/climate-intel', label: 'Risk intelligence', permission: 'climate-intel:read' },
+    { to: '/climate', label: 'Climate data', permission: 'climate:read' },
+    { to: '/farmers', label: 'Farmers', permission: 'farmers:read' },
+    { to: '/farms', label: 'Farms', permission: 'farms:read' }
+  ];
 }

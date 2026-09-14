@@ -30,5 +30,7 @@ public abstract class SharedPostgresContainer {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        // Production login cap is 20/min; the shared Spring test context reuses one bucket across ITs.
+        registry.add("aegisterra.security.lockout.login-rate-limit-per-minute", () -> "1000");
     }
 }

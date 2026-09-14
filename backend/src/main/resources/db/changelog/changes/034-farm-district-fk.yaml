@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 034-farm-district-fk
+      author: aegisterra
+      comment: >
+        Nullable FK from farms.district_id to districts.id. Existing demo farms remain
+        district_id = null. Farm location is administrative district; AEZ is derived (ADR-009).
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: fk_farms_district
+            baseTableName: farms
+            baseColumnNames: district_id
+            referencedTableName: districts
+            referencedColumnNames: id
+        - createIndex:
+            indexName: idx_farms_district_id
+            tableName: farms
+            columns: [{ name: district_id }]

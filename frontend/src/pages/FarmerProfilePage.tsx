@@ -4,7 +4,10 @@ import { agriApi } from '../api/agriculture';
 import { insuranceApi } from '../api/insurance';
 import { claimsApi } from '../api/claims';
 import { ApiError } from '../api/client';
+import { geographyApi } from '../api/geography';
 import { useAuth } from '../auth/AuthContext';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function FarmerProfilePage() {
   const { id = '' } = useParams();
@@ -28,6 +31,14 @@ export default function FarmerProfilePage() {
     queryKey: ['claims', 'by-farmer', id],
     queryFn: () => claimsApi.search({ farmerId: id, size: 20 }),
     enabled: Boolean(id) && hasPermission('claims:read')
+  });
+  const catalogDistrictId = farmerQuery.data?.districtId && UUID_RE.test(farmerQuery.data.districtId)
+    ? farmerQuery.data.districtId
+    : null;
+  const districtQuery = useQuery({
+    queryKey: ['district', catalogDistrictId],
+    queryFn: () => geographyApi.getDistrict(catalogDistrictId!),
+    enabled: Boolean(catalogDistrictId)
   });
 
   if (farmerQuery.isLoading) {
@@ -70,6 +81,14 @@ export default function FarmerProfilePage() {
             <div>
               <dt className="text-textSecondary">Email</dt>
               <dd>{farmer.email ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-textSecondary">Residence province</dt>
+              <dd>{districtQuery.data?.provinceName ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-textSecondary">Residence district</dt>
+              <dd>{districtQuery.data?.name ?? '—'}</dd>
             </div>
           </dl>
         </div>

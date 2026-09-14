@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { agriApi } from '../api/agriculture';
 import { ApiError } from '../api/client';
+import { geographyApi } from '../api/geography';
 import BoundaryMapEditor from '../components/BoundaryMapEditor';
 
 type Payload = {
@@ -16,7 +17,7 @@ type Payload = {
     email?: string;
   };
   identityVerified: boolean;
-  farm: { farmName: string; farmSizeHa?: number; farmCode?: string };
+  farm: { farmName: string; farmSizeHa?: number; farmCode?: string; districtId?: string };
   boundary: { geoJson: string | null; skip?: boolean };
   plots: Array<{ plotCode: string; name?: string }>;
   cropSeasons: Array<{ cropId: string; seasonId: string; plantedAreaHa?: number }>;
@@ -52,9 +53,21 @@ export default function FarmerRegistrationPage() {
   const [payload, setPayload] = useState<Payload>(emptyPayload);
   const [boundaryValid, setBoundaryValid] = useState(false);
   const [boundaryArea, setBoundaryArea] = useState<number | null>(null);
+  const [provinceId, setProvinceId] = useState('');
 
   const cropsQuery = useQuery({ queryKey: ['crops'], queryFn: () => agriApi.listCrops() });
   const seasonsQuery = useQuery({ queryKey: ['seasons'], queryFn: () => agriApi.listSeasons() });
+  const provincesQuery = useQuery({ queryKey: ['provinces'], queryFn: () => geographyApi.listProvinces() });
+  const districtsQuery = useQuery({
+    queryKey: ['districts', provinceId],
+    queryFn: () => geographyApi.listDistricts(provinceId),
+    enabled: Boolean(provinceId)
+  });
+  const districtQuery = useQuery({
+    queryKey: ['district', payload.farm.districtId],
+    queryFn: () => geographyApi.getDistrict(payload.farm.districtId!),
+    enabled: Boolean(payload.farm.districtId)
+  });
 
   useEffect(() => {
     if (!draftIdParam) return;
@@ -64,6 +77,13 @@ export default function FarmerRegistrationPage() {
       setPayload(JSON.parse(draft.payloadJson) as Payload);
     });
   }, [draftIdParam]);
+
+  useEffect(() => {
+    const derivedProvinceId = districtQuery.data?.provinceId;
+    if (derivedProvinceId && !provinceId) {
+      setProvinceId(derivedProvinceId);
+    }
+  }, [districtQuery.data, provinceId]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -103,7 +123,7 @@ export default function FarmerRegistrationPage() {
       return Boolean(f.firstName && f.lastName && f.nationalId && f.phoneNumber);
     }
     if (step === 3) return payload.identityVerified;
-    if (step === 4) return Boolean(payload.farm.farmName);
+    if (step === 4) return Boolean(payload.farm.farmName && payload.farm.districtId);
     if (step === 5) {
       if (payload.boundary.skip) return true;
       return boundaryValid && Boolean(payload.boundary.geoJson);
@@ -217,31 +237,99 @@ export default function FarmerRegistrationPage() {
         )}
 
         {step === 4 && (
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="text-sm">
-              Farm name
-              <input
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
-                value={payload.farm.farmName}
-                onChange={(e) => setPayload((p) => ({ ...p, farm: { ...p.farm, farmName: e.target.value } }))}
-              />
-            </label>
-            <label className="text-sm">
-              Estimated size (ha)
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
-                value={payload.farm.farmSizeHa ?? ''}
-                onChange={(e) =>
-                  setPayload((p) => ({
-                    ...p,
-                    farm: { ...p.farm, farmSizeHa: e.target.value ? Number(e.target.value) : undefined }
-                  }))
-                }
-              />
-            </label>
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="text-sm">
+                Farm name
+                <input
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
+                  value={payload.farm.farmName}
+                  onChange={(e) => setPayload((p) => ({ ...p, farm: { ...p.farm, farmName: e.target.value } }))}
+                />
+              </label>
+              <label className="text-sm">
+                Estimated size (ha)
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
+                  value={payload.farm.farmSizeHa ?? ''}
+                  onChange={(e) =>
+                    setPayload((p) => ({
+                      ...p,
+                      farm: { ...p.farm, farmSizeHa: e.target.value ? Number(e.target.value) : undefined }
+                    }))
+                  }
+                />
+              </label>
+              <label className="text-sm">
+                Province
+                <select
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2"
+                  value={provinceId}
+                  onChange={(e) => {
+                    const nextProvinceId = e.target.value;
+                    setProvinceId(nextProvinceId);
+                    setPayload((p) => ({ ...p, farm: { ...p.farm, districtId: undefined } }));
+                  }}
+                >
+                  <option value="">Select province</option>
+                  {(provincesQuery.data ?? []).map((province) => (
+                    <option key={province.id} value={province.id}>
+                      {province.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm">
+                District
+                <select
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 disabled:opacity-40"
+                  value={payload.farm.districtId ?? ''}
+                  disabled={!provinceId}
+                  onChange={(e) =>
+                    setPayload((p) => ({
+                      ...p,
+                      farm: { ...p.farm, districtId: e.target.value || undefined }
+                    }))
+                  }
+                >
+                  <option value="">Select district</option>
+                  {(districtsQuery.data ?? []).map((district) => (
+                    <option key={district.id} value={district.id}>
+                      {district.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {payload.farm.districtId ? (
+              <div className="grid gap-3 rounded-xl border border-border bg-background p-3 md:grid-cols-2">
+                <label className="text-sm">
+                  Agroecological Zone
+                  <input
+                    readOnly
+                    className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-textSecondary"
+                    value={districtQuery.data?.agroecologicalZoneName ?? '—'}
+                  />
+                </label>
+                <label className="text-sm">
+                  Agroecological Sub-zone
+                  <input
+                    readOnly
+                    className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-textSecondary"
+                    value={
+                      districtQuery.data?.agroecologicalSubzoneCode
+                        ? `${districtQuery.data.agroecologicalSubzoneCode} — ${districtQuery.data.agroecologicalSubzoneName ?? ''}`.trim()
+                        : '—'
+                    }
+                  />
+                </label>
+              </div>
+            ) : (
+              <p className="text-sm text-textSecondary">Select a province and district to derive agroecological classification.</p>
+            )}
           </div>
         )}
 
@@ -445,6 +533,21 @@ export default function FarmerRegistrationPage() {
             </p>
             <p>
               <strong>Farm:</strong> {payload.farm.farmName}
+            </p>
+            <p>
+              <strong>Province:</strong> {districtQuery.data?.provinceName ?? '—'}
+            </p>
+            <p>
+              <strong>District:</strong> {districtQuery.data?.name ?? '—'}
+            </p>
+            <p>
+              <strong>Agroecological Zone:</strong> {districtQuery.data?.agroecologicalZoneName ?? '—'}
+            </p>
+            <p>
+              <strong>Agroecological Sub-zone:</strong>{' '}
+              {districtQuery.data?.agroecologicalSubzoneCode
+                ? `${districtQuery.data.agroecologicalSubzoneCode} — ${districtQuery.data.agroecologicalSubzoneName ?? ''}`.trim()
+                : '—'}
             </p>
             <p>
               <strong>Boundary area:</strong>{' '}

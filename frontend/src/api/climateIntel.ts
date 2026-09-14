@@ -57,6 +57,105 @@ export type SeasonSummary = {
   generatedAt: string;
 };
 
+export type AezZoneHeat = {
+  code: string;
+  name: string;
+  meanScore: number | null;
+  grade: string | null;
+  districtCount: number;
+  farmCount: number;
+};
+
+export type AezSubzoneHeat = {
+  code: string;
+  name: string;
+  zoneCode: string;
+  zoneName: string;
+  meanScore: number | null;
+  grade: string | null;
+  districtCount: number;
+  farmCount: number;
+};
+
+export type AezRiskSummary = {
+  zones: AezZoneHeat[];
+  subzones: AezSubzoneHeat[];
+  unmappedDistrictCodes: string[];
+  unmappedCount: number;
+  generatedAt: string;
+};
+
+export type YieldYearPoint = {
+  year: number;
+  meanYieldTHa: number | null;
+  sampleCount: number;
+};
+
+export type CropYieldOutlook = {
+  cropCode: string;
+  cropName: string;
+  pastMeanYieldTHa: number | null;
+  recentMeanYieldTHa: number | null;
+  predictedYieldTHa: number | null;
+  yieldChangePctRecentVsPast: number | null;
+  outlookLabel: string;
+  narrative: string;
+  farmCount: number;
+  seasonSampleCount: number;
+  yearlySeries: YieldYearPoint[];
+};
+
+export type YieldClimateOutlook = {
+  referenceYear: number;
+  pastWindowStartYear: number;
+  pastWindowEndYear: number;
+  recentWindowStartYear: number;
+  recentWindowEndYear: number;
+  nationalMeanRiskScore: number | null;
+  nationalRiskGrade: string | null;
+  crops: CropYieldOutlook[];
+  methodology: string;
+  generatedAt: string;
+};
+
+export type MaizeMlFeatureRow = {
+  harvestYear: number;
+  meanYieldTHa: number;
+  sampleCount: number;
+  farmCount: number;
+  lag1YieldTHa: number | null;
+  lag2YieldTHa: number | null;
+  seasonRainMm: number | null;
+  yearIndex: number | null;
+};
+
+export type MaizeMlSpike = {
+  cropCode: string;
+  featureRowCount: number;
+  features: MaizeMlFeatureRow[];
+  leaveOneYearOut: Array<{
+    holdoutYear: number;
+    actualYieldTHa: number;
+    naiveLastYearPred: number | null;
+    ruleRecentMeanPred: number | null;
+    linearLagRainPred: number | null;
+    absErrorNaive: number | null;
+    absErrorRule: number | null;
+    absErrorLinear: number | null;
+  }>;
+  metrics: {
+    folds: number;
+    maeNaiveLastYear: number | null;
+    maeRuleRecentMean: number | null;
+    maeLinearLagRain: number | null;
+    bestMethod: string;
+    linearBeatsRule: boolean;
+  };
+  verdict: string;
+  notes: string;
+  generatedAt: string;
+};
+
 export type DistrictRiskProfile = {
   districtCode: string;
   meanScore: number | null;
@@ -66,6 +165,12 @@ export type DistrictRiskProfile = {
   grade: string | null;
   metricsJson: string | null;
   generatedAt: string;
+  provinceCode?: string | null;
+  provinceName?: string | null;
+  agroecologicalZoneCode?: string | null;
+  agroecologicalZoneName?: string | null;
+  agroecologicalSubzoneCode?: string | null;
+  agroecologicalSubzoneName?: string | null;
 };
 
 export type NationalRiskDashboard = {
@@ -75,6 +180,10 @@ export type NationalRiskDashboard = {
   districtHeat: Array<{ districtCode: string; meanScore: number | null; grade: string | null }>;
   dataCoveragePct: number | null;
   generatedAt: string;
+  zoneHeat?: AezZoneHeat[];
+  subzoneHeat?: AezSubzoneHeat[];
+  unmappedDistrictCodes?: string[];
+  unmappedCount?: number;
 };
 
 export type ClimateAlert = {
@@ -131,6 +240,23 @@ function qs(params: Record<string, string | number | boolean | undefined | null>
 export const climateIntelApi = {
   nationalDashboard: () =>
     apiClient<NationalRiskDashboard>('/api/v1/climate-intel/national/dashboard'),
+
+  aezRiskSummary: () =>
+    apiClient<AezRiskSummary>('/api/v1/climate-intel/aez/risk-summary'),
+
+  aezZoneRiskSummary: () =>
+    apiClient<AezZoneHeat[]>('/api/v1/climate-intel/aez/zones/risk-summary'),
+
+  aezSubzoneRiskSummary: () =>
+    apiClient<AezSubzoneHeat[]>('/api/v1/climate-intel/aez/subzones/risk-summary'),
+
+  yieldClimateOutlook: () =>
+    apiClient<YieldClimateOutlook>('/api/v1/climate-intel/planning/yield-outlook'),
+
+  yieldClimateOutlookCsvUrl: () => '/api/v1/climate-intel/planning/yield-outlook.csv',
+
+  maizeYieldMlSpike: () =>
+    apiClient<MaizeMlSpike>('/api/v1/climate-intel/planning/ml-spike/maize'),
 
   farmRiskScore: (farmId: string, params: { from?: string; to?: string } = {}) =>
     apiClient<FarmRiskScore>(`/api/v1/climate-intel/farms/${farmId}/risk-score${qs(params)}`),

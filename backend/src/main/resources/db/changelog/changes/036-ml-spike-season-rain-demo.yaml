@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-ml-spike-season-rain-aggregates
+      author: aegisterra
+      comment: Demo SEASON rainfall aggregates 2016–2025 for ML maize spike feature join (not production climate truth)
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO climate_observation_aggregates (
+                id, station_id, variable_code, period_type, period_start, period_end,
+                avg_value, min_value, max_value, sum_value, sample_count, unit, source, created_at
+              )
+              SELECT gen_random_uuid(),
+                     s.id,
+                     'RAIN_MM',
+                     'SEASON',
+                     make_timestamptz(v.y - 1, 9, 1, 0, 0, 0, 'UTC'),
+                     make_timestamptz(v.y, 2, 28, 23, 59, 59, 'UTC'),
+                     v.rain_mm / 150.0,
+                     0,
+                     v.rain_mm / 20.0,
+                     v.rain_mm,
+                     150,
+                     'mm',
+                     'ML_SPIKE_DEMO',
+                     CURRENT_TIMESTAMP
+              FROM weather_stations s
+              CROSS JOIN (VALUES
+                (2016, 980.0),
+                (2017, 1020.0),
+                (2018, 910.0),
+                (2019, 880.0),
+                (2020, 760.0),
+                (2021, 820.0),
+                (2022, 740.0),
+                (2023, 700.0),
+                (2024, 680.0),
+                (2025, 660.0)
+              ) AS v(y, rain_mm)
+              WHERE s.code IN ('DEMO-MUS-01', 'DEMO-HUE-01', 'DEMO-NYG-01', 'DEMO-KGL-01')
+                AND s.deleted = false
+                AND NOT EXISTS (
+                  SELECT 1 FROM climate_observation_aggregates a
+                  WHERE a.station_id = s.id
+                    AND a.variable_code = 'RAIN_MM'
+                    AND a.period_type = 'SEASON'
+                    AND a.source = 'ML_SPIKE_DEMO'
+                    AND EXTRACT(YEAR FROM a.period_end AT TIME ZONE 'UTC') = v.y
+                );

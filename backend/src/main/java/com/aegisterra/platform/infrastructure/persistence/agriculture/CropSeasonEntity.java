@@ -26,6 +26,9 @@ public class CropSeasonEntity extends AuditableEntity {
     @Column(name = "planted_area_ha")
     private BigDecimal plantedAreaHa;
 
+    @Column(name = "yield_t_ha")
+    private BigDecimal yieldTHa;
+
     public UUID getFarmId() {
         return farmId;
     }
@@ -64,5 +67,13 @@ public class CropSeasonEntity extends AuditableEntity {
 
     public void setPlantedAreaHa(BigDecimal plantedAreaHa) {
         this.plantedAreaHa = plantedAreaHa;
+    }
+
+    public BigDecimal getYieldTHa() {
+        return yieldTHa;
+    }
+
+    public void setYieldTHa(BigDecimal yieldTHa) {
+        this.yieldTHa = yieldTHa;
     }
 }

@@ -61,3 +61,15 @@ databaseChangeLog:
       file: db/changelog/changes/030-demo-hero-claim-workflow-links.yaml
   - include:
       file: db/changelog/changes/031-production-facing-identifiers.yaml
+  - include:
+      file: db/changelog/changes/032-geography-province-and-aez-schema.yaml
+  - include:
+      file: db/changelog/changes/033-geography-reference-seed.yaml
+  - include:
+      file: db/changelog/changes/034-farm-district-fk.yaml
+  - include:
+      file: db/changelog/changes/035-crop-yield-and-outlook-seed.yaml
+  - include:
+      file: db/changelog/changes/036-ml-spike-season-rain-demo.yaml
+  - include:
+      file: db/changelog/changes/037-presentation-readiness-seed.yaml

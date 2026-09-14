@@ -17,6 +17,7 @@ import com.aegisterra.platform.infrastructure.persistence.climateintelligence.Di
 import com.aegisterra.platform.infrastructure.persistence.climateintelligence.FarmClimateProfileEntity;
 import com.aegisterra.platform.infrastructure.persistence.climateintelligence.FarmClimateProfileRepository;
 import com.aegisterra.platform.infrastructure.persistence.agriculture.FarmRepository;
+import com.aegisterra.platform.application.contracts.AezRiskSummaryResponse;
 import com.aegisterra.platform.application.contracts.ClimateAlertResponse;
 import com.aegisterra.platform.application.contracts.ClimateIndicatorResponse;
 import com.aegisterra.platform.application.contracts.ClimateIntelJobResponse;
@@ -29,6 +30,10 @@ import com.aegisterra.platform.application.contracts.PageResponse;
 import com.aegisterra.platform.application.contracts.RecalculateClimateIntelRequest;
 import com.aegisterra.platform.application.contracts.SeasonSummaryResponse;
 import com.aegisterra.platform.application.contracts.WeatherSummaryResponse;
+import com.aegisterra.platform.application.contracts.YieldClimateOutlookResponse;
+import com.aegisterra.platform.application.contracts.MaizeYieldMlSpikeResponse;
+import com.aegisterra.platform.application.geography.GeographyCatalogService;
+import com.aegisterra.platform.infrastructure.persistence.geography.DistrictRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -58,6 +63,11 @@ public class ClimateIntelligenceService {
     private final ClimateAlertNumberGenerator numberGenerator;
     private final ClimateDataReadPort climateData;
     private final FarmRepository farmRepository;
+    private final AezRiskAggregationService aezRiskAggregationService;
+    private final YieldClimateOutlookService yieldClimateOutlookService;
+    private final MaizeYieldMlSpikeService maizeYieldMlSpikeService;
+    private final DistrictRepository districtRepository;
+    private final GeographyCatalogService geographyCatalogService;
 
     public ClimateIntelligenceService(
         RiskEngine riskEngine,
@@ -69,7 +79,12 @@ public class ClimateIntelligenceService {
         ClimateIntelJobRepository intelJobRepository,
         ClimateAlertNumberGenerator numberGenerator,
         ClimateDataReadPort climateData,
-        FarmRepository farmRepository
+        FarmRepository farmRepository,
+        AezRiskAggregationService aezRiskAggregationService,
+        YieldClimateOutlookService yieldClimateOutlookService,
+        MaizeYieldMlSpikeService maizeYieldMlSpikeService,
+        DistrictRepository districtRepository,
+        GeographyCatalogService geographyCatalogService
     ) {
         this.riskEngine = riskEngine;
         this.riskScoreRepository = riskScoreRepository;
@@ -81,6 +96,11 @@ public class ClimateIntelligenceService {
         this.numberGenerator = numberGenerator;
         this.climateData = climateData;
         this.farmRepository = farmRepository;
+        this.aezRiskAggregationService = aezRiskAggregationService;
+        this.yieldClimateOutlookService = yieldClimateOutlookService;
+        this.maizeYieldMlSpikeService = maizeYieldMlSpikeService;
+        this.districtRepository = districtRepository;
+        this.geographyCatalogService = geographyCatalogService;
     }
 
     @Transactional(readOnly = true)
@@ -90,28 +110,46 @@ public class ClimateIntelligenceService {
             String grade = score.getGrade() == null ? "UNKNOWN" : score.getGrade();
             byGrade.merge(grade, 1, Integer::sum);
         }
-        List<NationalRiskDashboardResponse.DistrictHeat> heat = districtRiskSnapshotRepository
-            .findByDeletedFalseOrderByScoreDesc().stream()
-            .map(d -> new NationalRiskDashboardResponse.DistrictHeat(
-                d.getDistrictCode(),
-                d.getScore() == null ? null : d.getScore().doubleValue(),
-                d.getGrade()
-            ))
-            .toList();
+        List<NationalRiskDashboardResponse.DistrictHeat> heat = aezRiskAggregationService.latestDistrictHeat();
         long open = alertRepository.countByStatusAndDeletedFalse(ClimateAlertStatus.OPEN.name());
         long critical = alertRepository.countByStatusAndSeverityAndDeletedFalse(
             ClimateAlertStatus.OPEN.name(), "CRITICAL"
         );
         long stations = climateData.stations().size();
         Double coverage = stations == 0 ? 0.0 : Math.min(100.0, stations * 10.0);
+        AezRiskSummaryResponse aez = aezRiskAggregationService.summarize();
         return new NationalRiskDashboardResponse(
             byGrade,
             critical,
             open,
             heat,
             coverage,
-            Instant.now()
+            Instant.now(),
+            aez.zones(),
+            aez.subzones(),
+            aez.unmappedDistrictCodes(),
+            aez.unmappedCount()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public AezRiskSummaryResponse aezRiskSummary() {
+        return aezRiskAggregationService.summarize();
+    }
+
+    @Transactional(readOnly = true)
+    public YieldClimateOutlookResponse yieldClimateOutlook() {
+        return yieldClimateOutlookService.outlook();
+    }
+
+    @Transactional(readOnly = true)
+    public String yieldClimateOutlookCsv() {
+        return yieldClimateOutlookService.outlookCsv();
+    }
+
+    @Transactional(readOnly = true)
+    public MaizeYieldMlSpikeResponse maizeYieldMlSpike() {
+        return maizeYieldMlSpikeService.evaluate();
     }
 
     @Transactional(readOnly = true)
@@ -227,6 +265,22 @@ public class ClimateIntelligenceService {
         DistrictRiskSnapshotEntity snap = districtRiskSnapshotRepository
             .findFirstByDistrictCodeAndDeletedFalseOrderByCalculatedAtDesc(code)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "District profile not found"));
+        String provinceCode = null;
+        String provinceName = null;
+        String zoneCode = null;
+        String zoneName = null;
+        String subzoneCode = null;
+        String subzoneName = null;
+        var district = districtRepository.findByCodeAndDeletedFalse(code);
+        if (district.isPresent()) {
+            var catalog = geographyCatalogService.getDistrict(district.get().getId());
+            provinceCode = catalog.provinceCode();
+            provinceName = catalog.provinceName();
+            zoneCode = catalog.agroecologicalZoneCode();
+            zoneName = catalog.agroecologicalZoneName();
+            subzoneCode = catalog.agroecologicalSubzoneCode();
+            subzoneName = catalog.agroecologicalSubzoneName();
+        }
         return new DistrictRiskProfileResponse(
             snap.getDistrictCode(),
             snap.getScore() == null ? null : snap.getScore().doubleValue(),
@@ -235,7 +289,13 @@ public class ClimateIntelligenceService {
             snap.getOpenAlertCount(),
             snap.getGrade(),
             snap.getComponentsJson(),
-            snap.getCalculatedAt()
+            snap.getCalculatedAt(),
+            provinceCode,
+            provinceName,
+            zoneCode,
+            zoneName,
+            subzoneCode,
+            subzoneName
         );
     }
 

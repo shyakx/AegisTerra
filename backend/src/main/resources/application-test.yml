@@ -8,6 +8,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 aegisterra:
+  modules:
+    partner-ops: true
   security:
     bootstrap:
       enabled: true

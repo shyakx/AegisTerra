@@ -4,10 +4,12 @@ import com.aegisterra.platform.application.insurance.PolicyReportingService;
 import com.aegisterra.platform.application.contracts.InsuranceReportResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
+import com.aegisterra.platform.infrastructure.config.ConditionalOnPartnerOps;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@ConditionalOnPartnerOps
 @RestController
 @RequestMapping("/api/v1/insurance/reports")
 @Tag(name = "Insurance Reports")

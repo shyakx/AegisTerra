@@ -10,7 +10,11 @@ public record NationalRiskDashboardResponse(
     long openAlerts,
     List<DistrictHeat> districtHeat,
     Double dataCoveragePct,
-    Instant generatedAt
+    Instant generatedAt,
+    List<AezRiskSummaryResponse.ZoneHeat> zoneHeat,
+    List<AezRiskSummaryResponse.SubzoneHeat> subzoneHeat,
+    List<String> unmappedDistrictCodes,
+    int unmappedCount
 ) {
     public record DistrictHeat(String districtCode, Double meanScore, String grade) {}
 }

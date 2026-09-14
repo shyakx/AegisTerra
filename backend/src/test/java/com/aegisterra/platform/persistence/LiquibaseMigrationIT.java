@@ -25,7 +25,8 @@ class LiquibaseMigrationIT extends SharedPostgresContainer {
             SELECT table_name FROM information_schema.tables
             WHERE table_schema = 'public'
               AND table_name IN (
-                'farmers', 'farms', 'farm_boundaries', 'districts',
+                'agroecological_subzones', 'agroecological_zones',
+                'farmers', 'farms', 'farm_boundaries', 'districts', 'provinces',
                 'insurance_policies', 'claims', 'payouts',
                 'weather_stations', 'configurations',
                 'climate_providers', 'climate_import_jobs', 'climate_alerts',
@@ -37,6 +38,8 @@ class LiquibaseMigrationIT extends SharedPostgresContainer {
         );
 
         assertThat(tables).containsExactly(
+            "agroecological_subzones",
+            "agroecological_zones",
             "claims",
             "climate_alerts",
             "climate_import_jobs",
@@ -50,6 +53,7 @@ class LiquibaseMigrationIT extends SharedPostgresContainer {
             "farms",
             "insurance_policies",
             "payouts",
+            "provinces",
             "weather_stations"
         );
 

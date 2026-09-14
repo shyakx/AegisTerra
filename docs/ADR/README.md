@@ -12,6 +12,9 @@ This folder records **accepted architectural decisions** for AegisTerra.
 | [ADR-006](./ADR-006-Modular-Monolith.md) | Modular monolith (not microservices-first) | Accepted |
 | [ADR-007](./ADR-007-HttpOnly-Cookie-Tokens.md) | HttpOnly cookie token transport for SPA | Accepted |
 | [ADR-008](./ADR-008-Reusable-Workflow-Engine.md) | Reusable in-process workflow engine | Accepted |
+| [ADR-009](./ADR-009-Administrative-Geography-vs-Agroecological-Classification.md) | Administrative geography vs agroecological classification | Accepted |
+| [ADR-010](./ADR-010-Product-Focus-Climate-Yield-Intelligence.md) | Product focus: climate & yield intelligence first | Accepted |
+| [ADR-011](./ADR-011-Maize-Yield-ML-Spike.md) | Experimental maize yield ML spike (Stage A) | Accepted (experimental) |
 
 ## Format
 

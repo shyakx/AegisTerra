@@ -1,0 +1,119 @@
+databaseChangeLog:
+  - changeSet:
+      id: 033-seed-provinces
+      author: aegisterra
+      comment: Five Rwanda provinces/groups from the agroecological workbook. Codes are stable (ADR-009).
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO provinces (id, code, name, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, v.code, v.name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('44444444-4444-4444-4444-444444440001', 'NORTH', 'Northern Province'),
+                ('44444444-4444-4444-4444-444444440002', 'SOUTH', 'Southern Province'),
+                ('44444444-4444-4444-4444-444444440003', 'EAST', 'Eastern Province'),
+                ('44444444-4444-4444-4444-444444440004', 'WEST', 'Western Province'),
+                ('44444444-4444-4444-4444-444444440005', 'KIGALI', 'Kigali City')
+              ) AS v(id, code, name)
+              WHERE NOT EXISTS (SELECT 1 FROM provinces p WHERE p.code = v.code AND p.deleted = false);
+
+  - changeSet:
+      id: 033-seed-agroecological-zones
+      author: aegisterra
+      comment: Five agroecological zones. Names are ZONE A–E; not province names (ADR-009).
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO agroecological_zones (id, code, name, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, v.code, v.name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('55555555-5555-5555-5555-555555550001', 'A', 'ZONE A'),
+                ('55555555-5555-5555-5555-555555550002', 'B', 'ZONE B'),
+                ('55555555-5555-5555-5555-555555550003', 'C', 'ZONE C'),
+                ('55555555-5555-5555-5555-555555550004', 'D', 'ZONE D'),
+                ('55555555-5555-5555-5555-555555550005', 'E', 'ZONE E')
+              ) AS v(id, code, name)
+              WHERE NOT EXISTS (SELECT 1 FROM agroecological_zones z WHERE z.code = v.code AND z.deleted = false);
+
+  - changeSet:
+      id: 033-seed-agroecological-subzones
+      author: aegisterra
+      comment: Eighteen sub-zones; canonical names from the Sub-zone Summary sheet.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO agroecological_subzones (id, zone_id, code, name, created_at, updated_at, version, status, deleted)
+              SELECT v.id::uuid, z.id, v.code, v.name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('66666666-6666-6666-6666-666666660001', 'A', 'A1', 'Volcanic Highlands'),
+                ('66666666-6666-6666-6666-666666660002', 'A', 'A2', 'Buberuka Highlands'),
+                ('66666666-6666-6666-6666-666666660003', 'A', 'A3', 'Northern Highland Transition'),
+                ('66666666-6666-6666-6666-666666660004', 'B', 'B1', 'Southern Highlands'),
+                ('66666666-6666-6666-6666-666666660005', 'B', 'B2', 'Southern Central Plateau'),
+                ('66666666-6666-6666-6666-666666660006', 'B', 'B3', 'Mayaga / Southern Lowlands'),
+                ('66666666-6666-6666-6666-666666660007', 'B', 'B4', 'Central-Southern Plateau'),
+                ('66666666-6666-6666-6666-666666660008', 'C', 'C1', 'Eastern Dry Savanna'),
+                ('66666666-6666-6666-6666-666666660009', 'C', 'C2', 'Eastern Plateau'),
+                ('66666666-6666-6666-6666-666666660010', 'C', 'C3', 'Southeastern Lowlands'),
+                ('66666666-6666-6666-6666-666666660011', 'C', 'C4', 'Bugesera Climate Zone'),
+                ('66666666-6666-6666-6666-666666660012', 'D', 'D1', 'Volcano / High-Rainfall Zone'),
+                ('66666666-6666-6666-6666-666666660013', 'D', 'D2', 'Congo-Nile Highlands'),
+                ('66666666-6666-6666-6666-666666660014', 'D', 'D3', 'Lake Kivu Highlands'),
+                ('66666666-6666-6666-6666-666666660015', 'D', 'D4', 'Western Lowland / Bugarama'),
+                ('66666666-6666-6666-6666-666666660016', 'E', 'E1', 'Northern/Highland Kigali'),
+                ('66666666-6666-6666-6666-666666660017', 'E', 'E2', 'Central Kigali'),
+                ('66666666-6666-6666-6666-666666660018', 'E', 'E3', 'Southern Kigali')
+              ) AS v(id, zone_code, code, name)
+              JOIN agroecological_zones z ON z.code = v.zone_code AND z.deleted = false
+              WHERE NOT EXISTS (SELECT 1 FROM agroecological_subzones s WHERE s.code = v.code AND s.deleted = false);
+
+  - changeSet:
+      id: 033-seed-districts
+      author: aegisterra
+      comment: >
+        Thirty districts from the workbook. Each district maps to exactly one province and
+        exactly one agroecological sub-zone. geom is left null (no fabricated polygons).
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO districts (
+                id, code, name, province_id, agroecological_subzone_id,
+                created_at, updated_at, version, status, deleted
+              )
+              SELECT v.id::uuid, v.code, v.name, p.id, s.id,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM (VALUES
+                ('77777777-7777-7777-7777-777777770001', 'BURERA', 'Burera', 'NORTH', 'A1'),
+                ('77777777-7777-7777-7777-777777770002', 'MUSANZE', 'Musanze', 'NORTH', 'A1'),
+                ('77777777-7777-7777-7777-777777770003', 'GICUMBI', 'Gicumbi', 'NORTH', 'A2'),
+                ('77777777-7777-7777-7777-777777770004', 'RULINDO', 'Rulindo', 'NORTH', 'A2'),
+                ('77777777-7777-7777-7777-777777770005', 'GAKENKE', 'Gakenke', 'NORTH', 'A3'),
+                ('77777777-7777-7777-7777-777777770006', 'NYAMAGABE', 'Nyamagabe', 'SOUTH', 'B1'),
+                ('77777777-7777-7777-7777-777777770007', 'NYARUGURU', 'Nyaruguru', 'SOUTH', 'B1'),
+                ('77777777-7777-7777-7777-777777770008', 'GISAGARA', 'Gisagara', 'SOUTH', 'B2'),
+                ('77777777-7777-7777-7777-777777770009', 'HUYE', 'Huye', 'SOUTH', 'B2'),
+                ('77777777-7777-7777-7777-777777770010', 'NYANZA', 'Nyanza', 'SOUTH', 'B2'),
+                ('77777777-7777-7777-7777-777777770011', 'RUHANGO', 'Ruhango', 'SOUTH', 'B3'),
+                ('77777777-7777-7777-7777-777777770012', 'KAMONYI', 'Kamonyi', 'SOUTH', 'B4'),
+                ('77777777-7777-7777-7777-777777770013', 'MUHANGA', 'Muhanga', 'SOUTH', 'B4'),
+                ('77777777-7777-7777-7777-777777770014', 'GATSIBO', 'Gatsibo', 'EAST', 'C1'),
+                ('77777777-7777-7777-7777-777777770015', 'NYAGATARE', 'Nyagatare', 'EAST', 'C1'),
+                ('77777777-7777-7777-7777-777777770016', 'KAYONZA', 'Kayonza', 'EAST', 'C2'),
+                ('77777777-7777-7777-7777-777777770017', 'RWAMAGANA', 'Rwamagana', 'EAST', 'C2'),
+                ('77777777-7777-7777-7777-777777770018', 'KIREHE', 'Kirehe', 'EAST', 'C3'),
+                ('77777777-7777-7777-7777-777777770019', 'NGOMA', 'Ngoma', 'EAST', 'C3'),
+                ('77777777-7777-7777-7777-777777770020', 'BUGESERA', 'Bugesera', 'EAST', 'C4'),
+                ('77777777-7777-7777-7777-777777770021', 'NYABIHU', 'Nyabihu', 'WEST', 'D1'),
+                ('77777777-7777-7777-7777-777777770022', 'RUBAVU', 'Rubavu', 'WEST', 'D1'),
+                ('77777777-7777-7777-7777-777777770023', 'NGORORERO', 'Ngororero', 'WEST', 'D2'),
+                ('77777777-7777-7777-7777-777777770024', 'RUTSIRO', 'Rutsiro', 'WEST', 'D2'),
+                ('77777777-7777-7777-7777-777777770025', 'KARONGI', 'Karongi', 'WEST', 'D3'),
+                ('77777777-7777-7777-7777-777777770026', 'NYAMASHEKE', 'Nyamasheke', 'WEST', 'D3'),
+                ('77777777-7777-7777-7777-777777770027', 'RUSIZI', 'Rusizi', 'WEST', 'D4'),
+                ('77777777-7777-7777-7777-777777770028', 'GASABO', 'Gasabo', 'KIGALI', 'E1'),
+                ('77777777-7777-7777-7777-777777770029', 'NYARUGENGE', 'Nyarugenge', 'KIGALI', 'E2'),
+                ('77777777-7777-7777-7777-777777770030', 'KICUKIRO', 'Kicukiro', 'KIGALI', 'E3')
+              ) AS v(id, code, name, province_code, subzone_code)
+              JOIN provinces p ON p.code = v.province_code AND p.deleted = false
+              JOIN agroecological_subzones s ON s.code = v.subzone_code AND s.deleted = false
+              WHERE NOT EXISTS (SELECT 1 FROM districts d WHERE d.code = v.code AND d.deleted = false);

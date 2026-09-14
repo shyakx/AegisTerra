@@ -1,9 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
+import { agriApi } from '../api/agriculture';
 import { climateIntelApi } from '../api/climateIntel';
 import { ApiError } from '../api/client';
+import { geographyApi } from '../api/geography';
 import { useAuth } from '../auth/AuthContext';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function FarmClimateIntelPage() {
   const { farmId = '' } = useParams();
@@ -18,6 +22,20 @@ export default function FarmClimateIntelPage() {
   const [to, setTo] = useState(defaultTo);
 
   const enabled = Boolean(farmId) && hasPermission('climate-intel:read');
+
+  const farmQuery = useQuery({
+    queryKey: ['farm', farmId],
+    queryFn: () => agriApi.getFarm(farmId),
+    enabled,
+    retry: false
+  });
+  const catalogDistrictId =
+    farmQuery.data?.districtId && UUID_RE.test(farmQuery.data.districtId) ? farmQuery.data.districtId : null;
+  const districtQuery = useQuery({
+    queryKey: ['district', catalogDistrictId],
+    queryFn: () => geographyApi.getDistrict(catalogDistrictId!),
+    enabled: Boolean(catalogDistrictId)
+  });
 
   const riskQuery = useQuery({
     queryKey: ['farm-risk', farmId],
@@ -91,6 +109,31 @@ export default function FarmClimateIntelPage() {
           value={
             riskQuery.data
               ? `${riskQuery.data.ruleSetCode ?? riskQuery.data.modelVersion} ${riskQuery.data.ruleVersion ?? ''}`
+              : '—'
+          }
+        />
+      </section>
+
+      <section className="grid gap-4 rounded-2xl border border-border bg-surface p-6 sm:grid-cols-3">
+        <Metric
+          label="Province"
+          value={districtQuery.data?.provinceName ?? districtQuery.data?.provinceCode ?? '—'}
+        />
+        <Metric
+          label="Agroecological Zone"
+          value={
+            districtQuery.data?.agroecologicalZoneName ?? districtQuery.data?.agroecologicalZoneCode ?? '—'
+          }
+        />
+        <Metric
+          label="Agroecological Sub-zone"
+          value={
+            districtQuery.data?.agroecologicalSubzoneCode
+              ? `${districtQuery.data.agroecologicalSubzoneCode}${
+                  districtQuery.data.agroecologicalSubzoneName
+                    ? ` — ${districtQuery.data.agroecologicalSubzoneName}`
+                    : ''
+                }`
               : '—'
           }
         />
