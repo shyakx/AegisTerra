@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
-import { Bell, LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
-import { notificationsApi } from '../api/notifications';
 import { buildNavigation, portalHeader } from '../navigation/buildNavigation';
 import { PageTransition } from '../motion/PageTransition';
 import { PoweredBy } from '../components/PoweredBy';
@@ -13,14 +11,6 @@ export default function AppLayout() {
   const { user, logout, hasPermission, hasRole, hasAnyPermission } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const header = portalHeader(user?.roles);
-
-  const unreadQuery = useQuery({
-    queryKey: ['notifications-unread-count'],
-    queryFn: () => notificationsApi.unreadCount(),
-    enabled: hasPermission('notifications:read'),
-    refetchInterval: 30000
-  });
-  const unread = unreadQuery.data?.count ?? 0;
 
   const visibleGroups = useMemo(
     () => buildNavigation({ hasPermission, hasRole, hasAnyPermission, farmerId: user?.farmerId }),
@@ -138,20 +128,6 @@ export default function AppLayout() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              {hasPermission('notifications:read') ? (
-                <Link
-                  to="/notifications"
-                  className="relative rounded-full border border-border p-2 text-textSecondary hover:bg-background"
-                  aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-                >
-                  <Bell className="h-5 w-5" />
-                  {unread > 0 ? (
-                    <span className="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-primary px-1 text-center text-[10px] font-semibold text-white">
-                      {unread > 99 ? '99+' : unread}
-                    </span>
-                  ) : null}
-                </Link>
-              ) : null}
               <button
                 type="button"
                 className="rounded-full border border-border p-2 text-textSecondary hover:bg-background"

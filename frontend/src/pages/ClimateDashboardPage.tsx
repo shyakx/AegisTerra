@@ -43,10 +43,7 @@ export default function ClimateDashboardPage() {
         description="Observation volume, import health, provider status, and quality grades."
         actions={
           <>
-            <Link to="/climate/map" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
-              Map
-            </Link>
-            <Link to="/climate/stations" className="rounded-full px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/climate/stations" className="at-btn rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary">
               Stations
             </Link>
             <Link to="/climate/observations" className="rounded-full px-4 py-2 text-sm font-semibold text-white">

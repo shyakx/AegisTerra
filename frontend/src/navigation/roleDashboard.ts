@@ -53,7 +53,7 @@ const META: Record<string, RoleDashboardMeta> = {
   FARMER: {
     eyebrow: 'My farm',
     title: 'What is happening and what is coming',
-    description: 'Your farms, guidance, and climate outlook so you can see risk early.',
+    description: 'Your farms and climate outlook so you can see risk early.',
     focus: ['farmer']
   },
   AUDITOR: {
@@ -90,7 +90,7 @@ export function roleQuickLinks(role: string | undefined, farmerId?: string | nul
       { to: farmerId ? `/farmers/${farmerId}` : '/farmers', label: 'My profile', permission: 'farmers:read' },
       { to: '/planning', label: 'Planning outlook' },
       { to: '/farms', label: 'My farms', permission: 'farms:read' },
-      { to: '/guidance', label: 'Guidance', permission: 'notifications:read' }
+      { to: '/climate-intel/alerts', label: 'Alerts', permission: 'climate-intel:read' }
     ];
   }
   return [

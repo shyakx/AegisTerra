@@ -5,7 +5,6 @@ import SiteLayout from '../layouts/SiteLayout';
 import CropHistoryPage from '../pages/CropHistoryPage';
 import CropsPage from '../pages/CropsPage';
 import DashboardPage from '../pages/DashboardPage';
-import FarmBoundaryPage from '../pages/FarmBoundaryPage';
 import FarmDetailsPage from '../pages/FarmDetailsPage';
 import FarmPlotsPage from '../pages/FarmPlotsPage';
 import FarmsPage from '../pages/FarmsPage';
@@ -13,7 +12,6 @@ import FarmerProfilePage from '../pages/FarmerProfilePage';
 import FarmerRegistrationPage from '../pages/FarmerRegistrationPage';
 import FarmersPage from '../pages/FarmersPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
-import GISPage from '../pages/GISPage';
 import HouseholdsPage from '../pages/HouseholdsPage';
 import LoginPage from '../pages/LoginPage';
 import HomePage from '../pages/public/HomePage';
@@ -21,9 +19,6 @@ import AboutPage from '../pages/public/AboutPage';
 import PlatformPage from '../pages/public/PlatformPage';
 import PartnersPage from '../pages/public/PartnersPage';
 import JoinPage from '../pages/public/JoinPage';
-import NotificationsPage from '../pages/NotificationsPage';
-import NotificationDetailPage from '../pages/NotificationDetailPage';
-import NotificationPreferencesPage from '../pages/NotificationPreferencesPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import SeasonsPage from '../pages/SeasonsPage';
 import SettingsPage from '../pages/SettingsPage';
@@ -34,13 +29,11 @@ import ClimateStationDetailPage from '../pages/ClimateStationDetailPage';
 import ClimateObservationsPage from '../pages/ClimateObservationsPage';
 import ClimateImportJobsPage from '../pages/ClimateImportJobsPage';
 import ClimateDatasetsPage from '../pages/ClimateDatasetsPage';
-import ClimateMapPage from '../pages/ClimateMapPage';
 import NationalRiskDashboardPage from '../pages/NationalRiskDashboardPage';
 import ClimateAlertsPage from '../pages/ClimateAlertsPage';
 import FarmClimateIntelPage from '../pages/FarmClimateIntelPage';
 import DistrictRiskPage from '../pages/DistrictRiskPage';
 import ClimateIntelJobsPage from '../pages/ClimateIntelJobsPage';
-import FarmerGuidancePage from '../pages/FarmerGuidancePage';
 import PlanningOutlookPage from '../pages/PlanningOutlookPage';
 
 export const router = createBrowserRouter(
@@ -89,26 +82,29 @@ export const router = createBrowserRouter(
               children: [
                 { path: 'farms', element: <FarmsPage /> },
                 { path: 'farms/:id', element: <FarmDetailsPage /> },
-                { path: 'farms/:id/boundary', element: <FarmBoundaryPage /> },
+                { path: 'farms/:id/boundary', element: <Navigate to=".." relative="path" replace /> },
                 { path: 'farms/:id/plots', element: <FarmPlotsPage /> },
                 { path: 'farms/:id/crop-history', element: <CropHistoryPage /> },
                 {
                   element: <ProtectedRoute denyRoles={['FARMER']} />,
                   children: [
                     { path: 'crops', element: <CropsPage /> },
-                    { path: 'seasons', element: <SeasonsPage /> },
-                    { path: 'gis', element: <GISPage /> }
+                    { path: 'seasons', element: <SeasonsPage /> }
                   ]
                 }
               ]
             },
             {
-              element: <ProtectedRoute permission="notifications:read" />,
-              children: [
-                { path: 'notifications', element: <NotificationsPage /> },
-                { path: 'notifications/:id', element: <NotificationDetailPage /> },
-                { path: 'notification-preferences', element: <NotificationPreferencesPage /> }
-              ]
+              path: 'notifications',
+              element: <Navigate to="/app" replace />
+            },
+            {
+              path: 'notifications/:id',
+              element: <Navigate to="/app" replace />
+            },
+            {
+              path: 'notification-preferences',
+              element: <Navigate to="/settings" replace />
             },
             {
               element: <ProtectedRoute permission="climate:read" />,
@@ -119,7 +115,7 @@ export const router = createBrowserRouter(
                 { path: 'climate/observations', element: <ClimateObservationsPage /> },
                 { path: 'climate/import-jobs', element: <ClimateImportJobsPage /> },
                 { path: 'climate/datasets', element: <ClimateDatasetsPage /> },
-                { path: 'climate/map', element: <ClimateMapPage /> }
+                { path: 'climate/map', element: <Navigate to="/climate" replace /> }
               ]
             },
             { path: 'planning', element: <PlanningOutlookPage /> },
@@ -133,10 +129,11 @@ export const router = createBrowserRouter(
                 { path: 'climate-intel/farms/:farmId', element: <FarmClimateIntelPage /> }
               ]
             },
-            { path: 'guidance', element: <FarmerGuidancePage /> },
             { path: 'weather', element: <Navigate to="/climate" replace /> },
             { path: 'settings', element: <SettingsPage /> },
-            // ADR-010: partner-ops routes retired from product surface
+            // ADR-010: retired from product surface (GIS/maps/guidance + partner-ops)
+            { path: 'gis', element: <Navigate to="/climate-intel" replace /> },
+            { path: 'guidance', element: <Navigate to="/planning" replace /> },
             { path: 'claims/*', element: <Navigate to="/planning" replace /> },
             { path: 'settlements/*', element: <Navigate to="/planning" replace /> },
             { path: 'policies/*', element: <Navigate to="/planning" replace /> },

@@ -25,11 +25,11 @@ Business architecture already states AegisTerra is **climate risk intelligence**
    - Shared views for insurers, farmers, banks, aggregators, government, development partners
 
 2. **In product (active)**  
-   Identity · Farmer/farm/crop/season registry · Geography/AEZ · Climate data · Climate intelligence (farm/district/AEZ/national) · Alerts · GIS · Notifications · Guidance · Planning outlook UI
+   Identity · Farmer/farm/crop/season registry · Geography/AEZ · Climate data · Climate intelligence (farm/district/AEZ/national) · Alerts · Planning outlook UI
 
 3. **Out of product for now (frozen)**  
-   Claims · Settlements/ledger/payment providers · Policy products/issuance/premium calculator · Workflow/task operator desks · Insured loans UI · Insured inputs UI · Satellite stub desk  
-   These may remain in the repository and database history, but are **not** exposed in the default SPA navigation/routes and are **not** registered as HTTP APIs unless `aegisterra.modules.partner-ops=true`.
+   Claims · Settlements/ledger/payment providers · Policy products/issuance/premium calculator · Workflow/task operator desks · Insured loans UI · Insured inputs UI · Satellite stub desk · **GIS / basemap desks** · Climate map viewer · Farm boundary map editor · Farmer guidance inbox UI · Notifications as a primary nav product  
+   These may remain in the repository and database history, but are **not** exposed in the default SPA navigation/routes and are **not** registered as HTTP APIs unless `aegisterra.modules.partner-ops=true` (partner-ops only; GIS/guidance stay SPA-redirected).
 
 4. **Do not invent** spatial AEZ polygons, M:N zoning, BPMN adapters, or multi-tenant IdP work until the planning story works end-to-end.
 

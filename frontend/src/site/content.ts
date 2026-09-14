@@ -23,7 +23,7 @@ export const CAPABILITIES = [
     points: [
       'Deterministic risk grades with rule lineage',
       'Open alerts where stress is rising now',
-      'GIS and registry context for each place'
+      'District and AEZ registry context for each place'
     ]
   },
   {

@@ -52,15 +52,15 @@ export default function PlanningOutlookPage() {
         </div>
         <section className="rounded-2xl border border-border bg-surface p-6">
           <p className="text-sm text-textSecondary">
-            Your account can open farms and guidance. Ask an operator for climate-intelligence access to see national and
-            AEZ outlook numbers, or open your farm climate page from a farm detail screen.
+            Your account can open farms. Ask an operator for climate-intelligence access to see national and AEZ outlook
+            numbers, or open your farm climate page from a farm detail screen.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link to="/farms" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white">
               My farms
             </Link>
-            <Link to="/guidance" className="rounded-xl border border-border px-4 py-2 text-sm font-medium">
-              Guidance
+            <Link to="/app" className="rounded-xl border border-border px-4 py-2 text-sm font-medium">
+              Workspace home
             </Link>
           </div>
         </section>

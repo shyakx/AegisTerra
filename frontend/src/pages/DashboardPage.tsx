@@ -228,12 +228,12 @@ export default function DashboardPage() {
           <div className="overflow-hidden rounded-2xl bg-surface">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <div>
-                <p className="text-sm text-textSecondary">Spatial posture</p>
+                <p className="text-sm text-textSecondary">Climate posture</p>
                 <h2 className="text-lg font-semibold">Stations & risk coverage</h2>
               </div>
-              {hasPermission('farms:read') ? (
-                <Link to="/gis" className="text-sm font-medium text-primary hover:underline">
-                  Open GIS
+              {hasPermission('climate-intel:read') ? (
+                <Link to="/climate-intel" className="text-sm font-medium text-primary hover:underline">
+                  Risk intelligence
                 </Link>
               ) : null}
             </div>

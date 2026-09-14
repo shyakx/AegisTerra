@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { agriApi } from '../api/agriculture';
 import { ApiError } from '../api/client';
 import { geographyApi } from '../api/geography';
-import BoundaryMapEditor from '../components/BoundaryMapEditor';
 
 type Payload = {
   household?: { code?: string; headName?: string; id?: string; skip?: boolean };
@@ -39,7 +38,7 @@ const emptyPayload = (): Payload => ({
   farmer: { firstName: '', lastName: '', nationalId: '', phoneNumber: '', email: '' },
   identityVerified: false,
   farm: { farmName: '', farmSizeHa: undefined },
-  boundary: { geoJson: null, skip: false },
+  boundary: { geoJson: null, skip: true },
   plots: [],
   cropSeasons: []
 });
@@ -51,8 +50,6 @@ export default function FarmerRegistrationPage() {
   const [draftId, setDraftId] = useState<string | null>(draftIdParam);
   const [step, setStep] = useState(1);
   const [payload, setPayload] = useState<Payload>(emptyPayload);
-  const [boundaryValid, setBoundaryValid] = useState(false);
-  const [boundaryArea, setBoundaryArea] = useState<number | null>(null);
   const [provinceId, setProvinceId] = useState('');
 
   const cropsQuery = useQuery({ queryKey: ['crops'], queryFn: () => agriApi.listCrops() });
@@ -124,12 +121,9 @@ export default function FarmerRegistrationPage() {
     }
     if (step === 3) return payload.identityVerified;
     if (step === 4) return Boolean(payload.farm.farmName && payload.farm.districtId);
-    if (step === 5) {
-      if (payload.boundary.skip) return true;
-      return boundaryValid && Boolean(payload.boundary.geoJson);
-    }
+    if (step === 5) return true;
     return true;
-  }, [step, payload, boundaryValid]);
+  }, [step, payload]);
 
   return (
     <div className="space-y-6">
@@ -334,39 +328,12 @@ export default function FarmerRegistrationPage() {
         )}
 
         {step === 5 && (
-          <div className="space-y-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={Boolean(payload.boundary.skip)}
-                onChange={(e) => {
-                  const skip = e.target.checked;
-                  setPayload((p) => ({
-                    ...p,
-                    boundary: skip ? { geoJson: null, skip: true } : { geoJson: p.boundary.geoJson, skip: false }
-                  }));
-                  if (skip) {
-                    setBoundaryValid(false);
-                    setBoundaryArea(null);
-                  }
-                }}
-              />
-              Skip boundary for now (you can draw it later on the farm page)
-            </label>
-            {!payload.boundary.skip ? (
-              <BoundaryMapEditor
-                initialGeoJson={payload.boundary.geoJson}
-                onChange={(geoJson, areaHa, valid) => {
-                  setBoundaryValid(valid);
-                  setBoundaryArea(areaHa);
-                  setPayload((p) => ({ ...p, boundary: { geoJson, skip: false } }));
-                }}
-              />
-            ) : (
-              <p className="text-sm text-textSecondary">
-                Boundary skipped. Continue to plots, or uncheck above to draw one now.
-              </p>
-            )}
+          <div className="space-y-3">
+            <p className="text-sm text-textSecondary">
+              Live map / polygon drawing is frozen with the GIS desk. District and agroecological zone already place
+              the farm for climate and yield planning.
+            </p>
+            <p className="text-sm font-medium text-textPrimary">Boundary polygon: skipped</p>
           </div>
         )}
 
@@ -550,12 +517,7 @@ export default function FarmerRegistrationPage() {
                 : '—'}
             </p>
             <p>
-              <strong>Boundary area:</strong>{' '}
-              {payload.boundary.skip
-                ? 'Skipped'
-                : boundaryArea != null
-                  ? `${boundaryArea.toFixed(4)} ha`
-                  : '—'}
+              <strong>Boundary:</strong> Skipped
             </p>
             <p>
               <strong>Plots:</strong> {payload.plots.length}

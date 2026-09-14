@@ -33,7 +33,8 @@ VITE_DEV_API_PROXY=http://localhost:8080
 - Climate stations & observations  
 - Farmers / farms (with **district → AEZ**)  
 - Farm climate risk page + crop history with yields  
-- Alerts / notifications  
+- Alerts (climate risk)
+- Planning / registry / climate data paths above  
 - CSV export of yield outlook  
 
 Frozen (not in presentation nav): claims, settlements, policies, lending, tasks desks.

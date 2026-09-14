@@ -18,12 +18,12 @@ The platform does **not** sell insurance and does **not** need a full claims/set
 - Farmers, farms, crops, seasons, crop history  
 - Geography / AEZ  
 - Climate data + climate intelligence (farm, district, AEZ, national)  
-- Alerts, GIS, notifications, guidance  
+- Alerts  
 - **Planning outlook** (`/planning`) — past → now → ahead  
 
 ## Frozen (not in default product)
 
-Claims, settlements, ledger, payment providers, policy admin, premium calculator, workflow/tasks desks, lending UI, insured inputs, satellite stub.
+Claims, settlements, ledger, payment providers, policy admin, premium calculator, workflow/tasks desks, lending UI, insured inputs, satellite stub, **GIS / climate map / boundary map editor**, farmer guidance UI, notifications as primary nav.
 
 - SPA: routes redirect to planning/core  
 - API: controllers require `aegisterra.modules.partner-ops=true` (enabled in **test** profile only by default)

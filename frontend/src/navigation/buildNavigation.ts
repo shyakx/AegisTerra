@@ -93,8 +93,7 @@ function catalogForRole(role: string | undefined, farmerId?: string | null): Nav
         items: [
           { label: 'Home', to: '/app', icon: LayoutDashboard },
           { label: 'Planning outlook', to: '/planning', icon: TrendingUp },
-          { label: 'Guidance', to: '/guidance', icon: Bell, permission: 'notifications:read' },
-          { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
+          { label: 'Alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' }
         ]
       },
       {
@@ -118,16 +117,14 @@ function catalogForRole(role: string | undefined, farmerId?: string | null): Nav
       label: 'Workspace',
       items: [
         { label: 'Overview', to: '/app', icon: LayoutDashboard },
-        { label: 'Planning outlook', to: '/planning', icon: TrendingUp },
-        { label: 'Notifications', to: '/notifications', icon: Bell, permission: 'notifications:read' }
+        { label: 'Planning outlook', to: '/planning', icon: TrendingUp }
       ]
     },
     {
       label: 'Registry',
       items: [
         { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
-        { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' },
-        { label: 'GIS', to: '/gis', icon: Map, permission: 'farms:read' }
+        { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' }
       ]
     },
     {
