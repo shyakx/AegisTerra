@@ -5,7 +5,11 @@ import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import './styles.css';
 import { AuthProvider } from './auth/AuthContext';
+import { InstallAppFab } from './components/InstallAppFab';
+import { registerPwa } from './pwa/registerPwa';
 import { router } from './routes';
+
+registerPwa();
 
 /**
  * State ownership:
@@ -28,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <RouterProvider router={router} future={{ v7_startTransition: true }} />
+        <InstallAppFab />
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>
