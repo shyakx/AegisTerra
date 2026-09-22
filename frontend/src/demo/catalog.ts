@@ -86,6 +86,7 @@ const FARMER_PERMISSIONS = [
   'policies:read',
   'claims:read',
   'claims:write',
+  'settlements:read',
   ...READ_NOTIFY
 ];
 
@@ -100,6 +101,7 @@ const INSURANCE_ADMIN_PERMISSIONS = [
   'claims:read',
   'claims:write',
   'claims:assess',
+  'settlements:read',
   'tasks:read',
   'tasks:act',
   'decisions:act',
@@ -119,10 +121,12 @@ const INSURANCE_OFFICER_PERMISSIONS = [
   'claims:read',
   'claims:write',
   'claims:assess',
+  'settlements:read',
   'tasks:read',
   'tasks:act',
   'decisions:act',
   'workflows:read',
+  'climate:read',
   'climate-intel:read',
   'satellite:read',
   ...READ_NOTIFY
@@ -178,6 +182,8 @@ const AGGREGATOR_PERMISSIONS = [
   'inputs:write',
   'tasks:read',
   'tasks:act',
+  'climate:read',
+  'climate-intel:read',
   ...READ_NOTIFY
 ];
 
@@ -277,7 +283,7 @@ export const OPERATORS: OperatorAccount[] = [
   {
     username: 'insurance.officer',
     password: OPERATOR_PASSWORD,
-    label: 'Insurance officer',
+    label: 'Authorized insurance officer',
     user: user(
       'user-ins',
       'insurance.officer',
@@ -289,13 +295,13 @@ export const OPERATORS: OperatorAccount[] = [
   {
     username: 'fi.officer',
     password: OPERATOR_PASSWORD,
-    label: 'Lender',
+    label: 'Authorized bank officer',
     user: user('user-fi', 'fi.officer', 'Financial Institution Officer', ['FI_OFFICER'], FI_PERMISSIONS)
   },
   {
     username: 'gov.analyst',
     password: OPERATOR_PASSWORD,
-    label: 'Government analyst',
+    label: 'Government officer',
     user: user('user-gov', 'gov.analyst', 'Government Analyst', ['GOVERNMENT_ANALYST'], GOV_PERMISSIONS)
   },
   {
@@ -307,7 +313,7 @@ export const OPERATORS: OperatorAccount[] = [
   {
     username: 'aggregator',
     password: OPERATOR_PASSWORD,
-    label: 'Aggregator',
+    label: 'Authorized aggregator officer',
     user: user('user-agg', 'aggregator', 'Aggregator Officer', ['AGGREGATOR'], AGGREGATOR_PERMISSIONS)
   },
   {
@@ -329,6 +335,20 @@ export const OPERATORS: OperatorAccount[] = [
     user: user('user-sup', 'support', 'Support Agent', ['SUPPORT'], SUPPORT_PERMISSIONS)
   }
 ];
+
+/** Owner presentation roles only — compact login shortcuts (ADR-012). */
+const LOGIN_SHORTCUT_USERNAMES = new Set([
+  'admin',
+  'insurance.officer',
+  'fi.officer',
+  'aggregator',
+  'gov.analyst',
+  'auditor'
+]);
+
+export const LOGIN_ROLE_SHORTCUTS: OperatorAccount[] = OPERATORS.filter((account) =>
+  LOGIN_SHORTCUT_USERNAMES.has(account.username)
+);
 
 export function page<T>(content: T[], pageNo = 0, size = 20) {
   const start = Math.max(0, pageNo) * size;

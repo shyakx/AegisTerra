@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import { OPERATORS } from '../demo/catalog';
+import { LOGIN_ROLE_SHORTCUTS } from '../demo/catalog';
 import { isStaticHostMode } from '../demo/mode';
 import { roleLandingPath } from '../navigation/roleLanding';
 import { PHOTOS } from '../media/photos';
@@ -151,21 +151,31 @@ export default function LoginPage() {
           </form>
 
           {isStaticHostMode() ? (
-            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {OPERATORS.map((account) => (
-                <button
-                  key={account.username}
-                  type="button"
-                  className="rounded-xl bg-background px-3 py-2 text-left text-xs"
-                  onClick={() => {
-                    setUsername(account.username);
-                    setPassword(account.password);
-                  }}
-                >
-                  <span className="block font-semibold">{account.label}</span>
-                  <span className="text-textSecondary">{account.username}</span>
-                </button>
-              ))}
+            <div className="mt-5 border-t border-border pt-4">
+              <label className="mb-1.5 block text-xs font-medium text-textSecondary" htmlFor="demo-role">
+                Demo role
+              </label>
+              <select
+                id="demo-role"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                defaultValue=""
+                onChange={(event) => {
+                  const account = LOGIN_ROLE_SHORTCUTS.find((a) => a.username === event.target.value);
+                  if (!account) return;
+                  setUsername(account.username);
+                  setPassword(account.password);
+                  setError(null);
+                }}
+              >
+                <option value="" disabled>
+                  Choose a role…
+                </option>
+                {LOGIN_ROLE_SHORTCUTS.map((account) => (
+                  <option key={account.username} value={account.username}>
+                    {account.label}
+                  </option>
+                ))}
+              </select>
             </div>
           ) : null}
 

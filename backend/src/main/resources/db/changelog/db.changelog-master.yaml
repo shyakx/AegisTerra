@@ -73,3 +73,5 @@ databaseChangeLog:
       file: db/changelog/changes/036-ml-spike-season-rain-demo.yaml
   - include:
       file: db/changelog/changes/037-presentation-readiness-seed.yaml
+  - include:
+      file: db/changelog/changes/038-aez-farmer-registry-seed.yaml

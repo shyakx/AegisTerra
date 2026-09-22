@@ -74,8 +74,8 @@ export default function SettlementsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-textSecondary">Financial settlement</p>
-          <h1 className="text-3xl font-semibold">Settlements</h1>
+          <p className="text-sm text-textSecondary">Payouts</p>
+          <h1 className="text-3xl font-semibold">Payouts</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link

@@ -22,9 +22,9 @@ export default function LendingPage() {
     <div className="space-y-4">
       <WorkspaceBanner
         photo={PHOTOS.harvestAerial}
-        eyebrow="Agricultural lending"
-        title="Insured loans"
-        description="Banks use farmer profiles, crop condition, and climate risk to approve and monitor agricultural credit. Insurance is embedded in the loan."
+        eyebrow="Financial institution"
+        title="Farmers registered with their loans"
+        description="Banks see farmers in the system with agricultural credit linked to climate risk. Insurance may be embedded in the loan."
       />
 
       <EnterpriseTable<AgriculturalLoan>

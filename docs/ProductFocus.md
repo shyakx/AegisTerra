@@ -1,6 +1,7 @@
-# Product focus (ADR-010)
+# Product focus (ADR-010 + ADR-012)
 
-AegisTerra’s active product is **climate and yield intelligence for planning**.
+AegisTerra’s north star remains **climate and yield intelligence for planning**.  
+ADR-012 adds **owner role sidebars** that re-expose scoped Policies, Payouts, partner directories, and AEZ views.
 
 ## Owner need
 
@@ -10,34 +11,21 @@ Insurers and other stakeholders rely on one place to:
 2. See **current** risk  
 3. Plan for what is **coming** — so harvest-loss payouts are less unexpected  
 
-The platform does **not** sell insurance and does **not** need a full claims/settlement company in the product UI.
+## Active product (by role)
 
-## In product
+- **System admin:** Dashboard, Climate hub, System intelligence, AEZ, partner directories, analytical reports, Payouts, Policies, Setting  
+- **Insurance:** AEZ, Payouts notification, Policy, Setting  
+- **Bank:** Farmers & loans, Payouts triggered, Policy, Setting  
+- **Farmer:** Farmer status, Payouts, Setting  
+- **Aggregator / Government / Auditor:** Climate, AEZ, reports (and read-only ops where permitted)
 
-- Identity / users  
-- Farmers, farms, crops, seasons, crop history  
-- Geography / AEZ  
-- Climate data + climate intelligence (farm, district, AEZ, national)  
-- Alerts  
-- **Planning outlook** (`/planning`) — past → now → ahead  
+## Still frozen
 
-## Frozen (not in default product)
+GIS / live maps, claims desks, workflow/task desks as primary product.
 
-Claims, settlements, ledger, payment providers, policy admin, premium calculator, workflow/tasks desks, lending UI, insured inputs, satellite stub, **GIS / climate map / boundary map editor**, farmer guidance UI, notifications as primary nav.
+## Planning depth
 
-- SPA: routes redirect to planning/core  
-- API: controllers require `aegisterra.modules.partner-ops=true` (enabled in **test** profile only by default)
-
-## Next depth for 100% owner story
-
-**Done (035):** `crop_seasons.yield_t_ha`, historical seasons 2016A–2024A, demo yield series, and
-`GET /api/v1/climate-intel/planning/yield-outlook` (past decade → recent 2 years → predicted yield under current climate risk).
-
-**ML Stage A (036 + ADR-011):** maize feature extract + leave-one-year-out metrics at
-`GET /api/v1/climate-intel/planning/ml-spike/maize` — experimental only; rule outlook stays default.
-
-Optional later: Stage B batch inference if linear beats the rule on **real** data.
-
-## Final presentation
-
-See [FinalPresentation.md](./FinalPresentation.md). Seed is complete enough that all active product paths work; real data replaces rows only (migration `037` backfills demo farm districts + stakeholder climate permissions).
+- Yield outlook + CSV (`035`)  
+- ML Stage A maize spike (`036`, ADR-011) — experimental  
+- Seed backfill (`037`)  
+- Owner AEZ farmer registry AGT-0001–0450 in Postgres (`038`) + SPA table

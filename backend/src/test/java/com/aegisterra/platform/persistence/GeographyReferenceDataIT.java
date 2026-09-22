@@ -22,9 +22,19 @@ class GeographyReferenceDataIT extends SharedPostgresContainer {
         assertThat(countActive("districts")).isEqualTo(30);
         assertThat(countActive("agroecological_zones")).isEqualTo(5);
         assertThat(countActive("agroecological_subzones")).isEqualTo(18);
-        assertThat(countActive("sectors")).isZero();
-        assertThat(countActive("cells")).isZero();
+        assertThat(countActive("sectors")).isEqualTo(84);
+        assertThat(countActive("cells")).isEqualTo(84);
         assertThat(countActive("villages")).isZero();
+        Long aezFarmers = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM farmers WHERE deleted = false AND farmer_code LIKE 'AGT-%'",
+            Long.class
+        );
+        assertThat(aezFarmers).isEqualTo(450L);
+        Long aezFarms = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM farms WHERE deleted = false AND farm_code LIKE 'FARM-AGT-%'",
+            Long.class
+        );
+        assertThat(aezFarms).isEqualTo(450L);
     }
 
     @Test

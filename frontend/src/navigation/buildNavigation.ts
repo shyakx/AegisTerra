@@ -6,7 +6,14 @@ import {
   Settings,
   Bell,
   CloudSun,
-  TrendingUp
+  Building2,
+  Landmark,
+  Sprout,
+  FileBarChart,
+  Wallet,
+  ScrollText,
+  Brain,
+  UserCircle
 } from 'lucide-react';
 
 export type NavItem = {
@@ -43,106 +50,289 @@ const ROLE_ORDER = [
 
 const HEADER_BY_ROLE: Record<string, { eyebrow: string; title: string }> = {
   SYSTEM_ADMIN: {
-    eyebrow: 'Climate & yield intelligence',
-    title: 'Plan ahead from past and current data'
+    eyebrow: 'System administrator',
+    title: 'National climate, partners, and cover operations'
   },
   INSURANCE_ADMIN: {
-    eyebrow: 'Insurer planning',
-    title: 'See climate risk and yield outlook before loss'
+    eyebrow: 'Insurance company',
+    title: 'Zones, policies, and payout notices'
   },
   INSURANCE_OFFICER: {
-    eyebrow: 'Insurer planning',
-    title: 'Portfolio risk from climate and farms'
+    eyebrow: 'Authorized insurance officer',
+    title: 'Zones, policies, and payout notices'
   },
   FI_OFFICER: {
-    eyebrow: 'Lender planning',
-    title: 'Borrower climate and yield exposure'
+    eyebrow: 'Authorized bank officer',
+    title: 'Farmers, loans, policies, and payouts'
   },
   GOVERNMENT_ANALYST: {
-    eyebrow: 'Government',
-    title: 'National climate and production outlook'
+    eyebrow: 'Government officer',
+    title: 'Climate, zones, and analytical reports'
   },
   DEVELOPMENT_PARTNER: {
     eyebrow: 'Development partner',
     title: 'Programme climate and yield intelligence'
   },
   AGGREGATOR: {
-    eyebrow: 'Aggregator',
+    eyebrow: 'Authorized aggregator officer',
     title: 'Network farms and climate outlook'
   },
   FARMER: {
-    eyebrow: 'My farm',
-    title: 'What the climate means for my crops'
+    eyebrow: 'Farmer',
+    title: 'Status, payouts, and settings'
   },
   AUDITOR: {
-    eyebrow: 'Assurance',
-    title: 'Read-only climate and registry view'
+    eyebrow: 'Auditor',
+    title: 'Read-only climate and reports'
   },
   SUPPORT: {
     eyebrow: 'Support',
-    title: 'Help operators use planning tools'
+    title: 'Help operators use the platform'
   }
 };
 
-/** ADR-010: single intelligence-first catalog for all roles. */
-function catalogForRole(role: string | undefined, farmerId?: string | null): NavGroup[] {
-  if (role === 'FARMER') {
-    return [
-      {
-        label: 'My workspace',
-        items: [
-          { label: 'Home', to: '/app', icon: LayoutDashboard },
-          { label: 'Planning outlook', to: '/planning', icon: TrendingUp },
-          { label: 'Alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' }
-        ]
-      },
-      {
-        label: 'My farm',
-        items: [
-          {
-            label: 'My profile',
-            to: farmerId ? `/farmers/${farmerId}` : '/farmers',
-            icon: Users,
-            permission: 'farmers:read'
-          },
-          { label: 'My farms', to: '/farms', icon: Map, permission: 'farms:read' }
-        ]
-      },
-      { label: 'Account', items: [{ label: 'Platform info', to: '/settings', icon: Settings }] }
-    ];
-  }
+function settingsItem(): NavItem {
+  return { label: 'Setting', to: '/settings', icon: Settings };
+}
 
+/** Owner admin sidebar (+ System intelligence). */
+function adminCatalog(): NavGroup[] {
   return [
     {
       label: 'Workspace',
       items: [
-        { label: 'Overview', to: '/app', icon: LayoutDashboard },
-        { label: 'Planning outlook', to: '/planning', icon: TrendingUp }
+        { label: 'Dashboard', to: '/app', icon: LayoutDashboard },
+        { label: 'Climate', to: '/climate-hub', icon: CloudSun, permission: 'climate:read' },
+        {
+          label: 'System intelligence',
+          to: '/system-intelligence',
+          icon: Brain,
+          permission: 'climate-intel:read'
+        },
+        {
+          label: 'Agro-ecological zones',
+          to: '/agroecological-zones',
+          icon: Map,
+          permission: 'farmers:read'
+        }
       ]
     },
     {
-      label: 'Registry',
+      label: 'Partners',
       items: [
-        { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
-        { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' }
+        {
+          label: 'Financial institutions',
+          to: '/directories/financial-institutions',
+          icon: Landmark
+        },
+        {
+          label: 'Insurance companies',
+          to: '/directories/insurance-companies',
+          icon: Building2
+        },
+        {
+          label: 'Agricultural aggregators',
+          to: '/directories/aggregators',
+          icon: Sprout
+        }
       ]
     },
     {
-      label: 'Climate & risk',
+      label: 'Operations',
       items: [
-        { label: 'Climate data', to: '/climate', icon: CloudSun, permission: 'climate:read' },
-        { label: 'Risk intelligence', to: '/climate-intel', icon: LayoutDashboard, permission: 'climate-intel:read' },
-        { label: 'Alerts', to: '/climate-intel/alerts', icon: Bell, permission: 'climate-intel:read' }
-      ]
-    },
-    {
-      label: 'Administration',
-      items: [
+        { label: 'Analytical reports', to: '/reports', icon: FileBarChart },
+        { label: 'Payouts', to: '/payouts', icon: Wallet, permission: 'settlements:read' },
+        { label: 'Policies', to: '/policies', icon: ScrollText, permission: 'policies:read' },
         { label: 'Users', to: '/users', icon: Users, permission: 'users:read' },
-        { label: 'Platform info', to: '/settings', icon: Settings }
+        settingsItem()
       ]
     }
   ];
+}
+
+function insuranceCatalog(): NavGroup[] {
+  return [
+    {
+      label: 'Insurance workspace',
+      items: [
+        {
+          label: 'Agro-ecological zones',
+          to: '/agroecological-zones',
+          icon: Map,
+          permission: 'farmers:read'
+        },
+        {
+          label: 'Payouts notification',
+          to: '/payouts',
+          icon: Bell,
+          permission: 'settlements:read'
+        },
+        { label: 'Policy', to: '/policies', icon: ScrollText, permission: 'policies:read' },
+        settingsItem()
+      ]
+    }
+  ];
+}
+
+function bankCatalog(): NavGroup[] {
+  return [
+    {
+      label: 'Bank workspace',
+      items: [
+        {
+          label: 'Farmers & loans',
+          to: '/lending',
+          icon: Users,
+          permission: 'loans:read'
+        },
+        {
+          label: 'Payouts triggered',
+          to: '/payouts',
+          icon: Wallet,
+          permission: 'settlements:read'
+        },
+        { label: 'Policy', to: '/policies', icon: ScrollText, permission: 'policies:read' },
+        settingsItem()
+      ]
+    }
+  ];
+}
+
+function farmerCatalog(farmerId?: string | null): NavGroup[] {
+  return [
+    {
+      label: 'My workspace',
+      items: [
+        {
+          label: 'Farmer status',
+          to: '/farmer-status',
+          icon: UserCircle,
+          permission: 'farmers:read'
+        },
+        { label: 'Payouts', to: '/payouts', icon: Wallet, permission: 'settlements:read' },
+        settingsItem()
+      ]
+    },
+    {
+      label: 'Records',
+      items: [
+        {
+          label: 'My profile',
+          to: farmerId ? `/farmers/${farmerId}` : '/farmers',
+          icon: Users,
+          permission: 'farmers:read'
+        },
+        { label: 'My farms', to: '/farms', icon: Map, permission: 'farms:read' }
+      ]
+    }
+  ];
+}
+
+function aggregatorCatalog(): NavGroup[] {
+  return [
+    {
+      label: 'Aggregator workspace',
+      items: [
+        { label: 'Dashboard', to: '/app', icon: LayoutDashboard },
+        { label: 'Climate', to: '/climate-hub', icon: CloudSun, permission: 'climate:read' },
+        {
+          label: 'Agro-ecological zones',
+          to: '/agroecological-zones',
+          icon: Map,
+          permission: 'farmers:read'
+        },
+        { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
+        { label: 'Farms', to: '/farms', icon: Map, permission: 'farms:read' },
+        settingsItem()
+      ]
+    }
+  ];
+}
+
+function governmentCatalog(): NavGroup[] {
+  return [
+    {
+      label: 'Government workspace',
+      items: [
+        { label: 'Dashboard', to: '/app', icon: LayoutDashboard },
+        { label: 'Climate', to: '/climate-hub', icon: CloudSun, permission: 'climate:read' },
+        {
+          label: 'Agro-ecological zones',
+          to: '/agroecological-zones',
+          icon: Map,
+          permission: 'farmers:read'
+        },
+        { label: 'Analytical reports', to: '/reports', icon: FileBarChart },
+        settingsItem()
+      ]
+    }
+  ];
+}
+
+function auditorCatalog(): NavGroup[] {
+  return [
+    {
+      label: 'Assurance',
+      items: [
+        { label: 'Dashboard', to: '/app', icon: LayoutDashboard },
+        { label: 'Climate', to: '/climate-hub', icon: CloudSun, permission: 'climate:read' },
+        {
+          label: 'Agro-ecological zones',
+          to: '/agroecological-zones',
+          icon: Map,
+          permission: 'farmers:read'
+        },
+        { label: 'Analytical reports', to: '/reports', icon: FileBarChart },
+        { label: 'Policies', to: '/policies', icon: ScrollText, permission: 'policies:read' },
+        { label: 'Payouts', to: '/payouts', icon: Wallet, permission: 'settlements:read' },
+        settingsItem()
+      ]
+    }
+  ];
+}
+
+function partnerCatalog(): NavGroup[] {
+  return governmentCatalog();
+}
+
+function supportCatalog(): NavGroup[] {
+  return [
+    {
+      label: 'Support',
+      items: [
+        { label: 'Dashboard', to: '/app', icon: LayoutDashboard },
+        { label: 'Users', to: '/users', icon: Users, permission: 'users:read' },
+        { label: 'Farmers', to: '/farmers', icon: Users, permission: 'farmers:read' },
+        settingsItem()
+      ]
+    }
+  ];
+}
+
+function catalogForRole(role: string | undefined, farmerId?: string | null): NavGroup[] {
+  switch (role) {
+    case 'SYSTEM_ADMIN':
+      return adminCatalog();
+    case 'INSURANCE_ADMIN':
+    case 'INSURANCE_OFFICER':
+      return insuranceCatalog();
+    case 'FI_OFFICER':
+      return bankCatalog();
+    case 'FARMER':
+      return farmerCatalog(farmerId);
+    case 'AGGREGATOR':
+      return aggregatorCatalog();
+    case 'GOVERNMENT_ANALYST':
+      return governmentCatalog();
+    case 'AUDITOR':
+      return auditorCatalog();
+    case 'DEVELOPMENT_PARTNER':
+      return partnerCatalog();
+    case 'SUPPORT':
+      return supportCatalog();
+    default:
+      return adminCatalog();
+  }
 }
 
 export function primaryRole(roles: string[] | undefined): string | undefined {

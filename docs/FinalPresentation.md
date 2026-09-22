@@ -27,17 +27,15 @@ VITE_DEV_API_PROXY=http://localhost:8080
 
 ## Active product paths (must work on seed)
 
-- Login / roles  
-- Dashboard + **Planning outlook** (past / now / ahead + maize ML spike panel)  
-- National / district / AEZ risk  
-- Climate stations & observations  
-- Farmers / farms (with **district → AEZ**)  
-- Farm climate risk page + crop history with yields  
-- Alerts (climate risk)
-- Planning / registry / climate data paths above  
+- Login / roles (admin, insurance, bank, aggregator, government, auditor, farmer)  
+- **Role sidebars** per ADR-012 (admin includes **System intelligence**)  
+- Climate hub · Planning outlook · Risk intelligence · AEZ catalog  
+- Partner directories (banks / insurers / aggregators)  
+- Analytical reports hub  
+- Policies · Payouts (settlements) · Farmers & loans (bank) · Farmer status  
 - CSV export of yield outlook  
 
-Frozen (not in presentation nav): claims, settlements, policies, lending, tasks desks.
+Frozen: GIS / live maps, claims desks, task desks as primary nav.
 
 ## Seed migrations that make the story complete
 
@@ -48,6 +46,7 @@ Frozen (not in presentation nav): claims, settlements, policies, lending, tasks 
 | 035 | Yield column + historical seasons + demo yields |
 | 036 | Demo season rain for ML spike |
 | 037 | Farm/farmer district backfill + climate-intel for all stakeholder roles |
+| 038 | Owner AEZ farmer registry AGT-0001–0450 (sectors/cells/farms) |
 
 ## Replacing with real data
 

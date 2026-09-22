@@ -7,13 +7,24 @@ import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../auth/AuthContext';
 
 const CHECKS: Array<{ label: string; path: string; note: string; permission?: string }> = [
-  { label: 'Overview', path: '/app', note: 'Planning workspace home' },
-  { label: 'Planning outlook', path: '/planning', note: 'Past → now → ahead' },
-  { label: 'Farmers', path: '/farmers', note: 'Farmer registry', permission: 'farmers:read' },
-  { label: 'Farms', path: '/farms', note: 'Farm registry', permission: 'farms:read' },
-  { label: 'Climate data', path: '/climate', note: 'Stations and observations', permission: 'climate:read' },
-  { label: 'Risk intelligence', path: '/climate-intel', note: 'National climate risk', permission: 'climate-intel:read' },
-  { label: 'Climate alerts', path: '/climate-intel/alerts', note: 'Open climate alerts', permission: 'climate-intel:read' }
+  { label: 'Dashboard', path: '/app', note: 'Role overview' },
+  { label: 'Climate hub', path: '/climate-hub', note: 'History, forecast, risk', permission: 'climate:read' },
+  {
+    label: 'System intelligence',
+    path: '/system-intelligence',
+    note: 'Planning brain',
+    permission: 'climate-intel:read'
+  },
+  {
+    label: 'Agro-ecological zones',
+    path: '/agroecological-zones',
+    note: 'Zones and sub-zones',
+    permission: 'farmers:read'
+  },
+  { label: 'Analytical reports', path: '/reports', note: 'Report entry points' },
+  { label: 'Policies', path: '/policies', note: 'Partner policies', permission: 'policies:read' },
+  { label: 'Payouts', path: '/payouts', note: 'Payout notifications', permission: 'settlements:read' },
+  { label: 'Farmers & loans', path: '/lending', note: 'Bank loan book', permission: 'loans:read' }
 ];
 
 export default function SettingsPage() {

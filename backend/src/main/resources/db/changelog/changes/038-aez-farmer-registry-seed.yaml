@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 038-aez-farmer-registry-seed
+      author: aegisterra
+      comment: >
+        Owner agroecological farmer registry (AGT-0001..AGT-0450) with district → AEZ
+        placement, sector/cell admin units, and one farm per farmer. Idempotent by farmer_code / farm_code.
+      changes:
+        - sqlFile:
+            path: 038-aez-farmer-registry-seed.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+            endDelimiter: ";"

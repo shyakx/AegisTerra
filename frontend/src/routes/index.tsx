@@ -35,6 +35,24 @@ import FarmClimateIntelPage from '../pages/FarmClimateIntelPage';
 import DistrictRiskPage from '../pages/DistrictRiskPage';
 import ClimateIntelJobsPage from '../pages/ClimateIntelJobsPage';
 import PlanningOutlookPage from '../pages/PlanningOutlookPage';
+import ClimateHubPage from '../pages/ClimateHubPage';
+import SystemIntelligencePage from '../pages/SystemIntelligencePage';
+import AgroecologicalZonesPage from '../pages/AgroecologicalZonesPage';
+import PartnerDirectoryPage from '../pages/PartnerDirectoryPage';
+import AnalyticalReportsPage from '../pages/AnalyticalReportsPage';
+import FarmerStatusPage from '../pages/FarmerStatusPage';
+import PoliciesPage from '../pages/PoliciesPage';
+import PolicyDetailsPage from '../pages/PolicyDetailsPage';
+import PolicyIssuancePage from '../pages/PolicyIssuancePage';
+import SettlementsPage from '../pages/SettlementsPage';
+import SettlementDetailsPage from '../pages/SettlementDetailsPage';
+import SettlementDashboardPage from '../pages/SettlementDashboardPage';
+import SettlementReportsPage from '../pages/SettlementReportsPage';
+import LendingPage from '../pages/LendingPage';
+import LoanDetailsPage from '../pages/LoanDetailsPage';
+import InsuranceProductsPage from '../pages/InsuranceProductsPage';
+import InsuranceReportsPage from '../pages/InsuranceReportsPage';
+import PremiumCalculatorPage from '../pages/PremiumCalculatorPage';
 
 export const router = createBrowserRouter(
   [
@@ -58,6 +76,12 @@ export const router = createBrowserRouter(
           element: <AppLayout />,
           children: [
             { path: 'app', element: <DashboardPage /> },
+            { path: 'climate-hub', element: <ClimateHubPage /> },
+            { path: 'system-intelligence', element: <SystemIntelligencePage /> },
+            { path: 'agroecological-zones', element: <AgroecologicalZonesPage /> },
+            { path: 'directories/:kind', element: <PartnerDirectoryPage /> },
+            { path: 'reports', element: <AnalyticalReportsPage /> },
+            { path: 'farmer-status', element: <FarmerStatusPage /> },
             {
               element: <ProtectedRoute permission="users:read" />,
               children: [{ path: 'users', element: <UsersPage /> }]
@@ -115,7 +139,7 @@ export const router = createBrowserRouter(
                 { path: 'climate/observations', element: <ClimateObservationsPage /> },
                 { path: 'climate/import-jobs', element: <ClimateImportJobsPage /> },
                 { path: 'climate/datasets', element: <ClimateDatasetsPage /> },
-                { path: 'climate/map', element: <Navigate to="/climate" replace /> }
+                { path: 'climate/map', element: <Navigate to="/climate-hub" replace /> }
               ]
             },
             { path: 'planning', element: <PlanningOutlookPage /> },
@@ -129,21 +153,47 @@ export const router = createBrowserRouter(
                 { path: 'climate-intel/farms/:farmId', element: <FarmClimateIntelPage /> }
               ]
             },
-            { path: 'weather', element: <Navigate to="/climate" replace /> },
+            {
+              element: <ProtectedRoute permission="policies:read" />,
+              children: [
+                { path: 'policies', element: <PoliciesPage /> },
+                { path: 'policies/:id', element: <PolicyDetailsPage /> },
+                {
+                  element: <ProtectedRoute permission="policies:write" />,
+                  children: [{ path: 'policies/issue', element: <PolicyIssuancePage /> }]
+                },
+                { path: 'insurance/products', element: <InsuranceProductsPage /> },
+                { path: 'insurance/reports', element: <InsuranceReportsPage /> },
+                { path: 'insurance/calculator', element: <PremiumCalculatorPage /> }
+              ]
+            },
+            {
+              element: <ProtectedRoute permission="settlements:read" />,
+              children: [
+                { path: 'payouts', element: <SettlementsPage /> },
+                { path: 'settlements', element: <SettlementsPage /> },
+                { path: 'settlements/dashboard', element: <SettlementDashboardPage /> },
+                { path: 'settlements/reports', element: <SettlementReportsPage /> },
+                { path: 'settlements/:id', element: <SettlementDetailsPage /> }
+              ]
+            },
+            {
+              element: <ProtectedRoute permission="loans:read" />,
+              children: [
+                { path: 'lending', element: <LendingPage /> },
+                { path: 'lending/:id', element: <LoanDetailsPage /> }
+              ]
+            },
+            { path: 'weather', element: <Navigate to="/climate-hub" replace /> },
             { path: 'settings', element: <SettingsPage /> },
-            // ADR-010: retired from product surface (GIS/maps/guidance + partner-ops)
-            { path: 'gis', element: <Navigate to="/climate-intel" replace /> },
+            { path: 'gis', element: <Navigate to="/agroecological-zones" replace /> },
             { path: 'guidance', element: <Navigate to="/planning" replace /> },
-            { path: 'claims/*', element: <Navigate to="/planning" replace /> },
-            { path: 'settlements/*', element: <Navigate to="/planning" replace /> },
-            { path: 'policies/*', element: <Navigate to="/planning" replace /> },
-            { path: 'insurance/*', element: <Navigate to="/planning" replace /> },
-            { path: 'lending/*', element: <Navigate to="/planning" replace /> },
+            { path: 'claims/*', element: <Navigate to="/app" replace /> },
             { path: 'tasks/*', element: <Navigate to="/app" replace /> },
-            { path: 'satellite', element: <Navigate to="/climate-intel" replace /> },
+            { path: 'satellite', element: <Navigate to="/system-intelligence" replace /> },
             { path: 'inputs', element: <Navigate to="/farmers" replace /> },
-            { path: 'ledger/*', element: <Navigate to="/app" replace /> },
-            { path: 'payment-providers', element: <Navigate to="/app" replace /> }
+            { path: 'ledger/*', element: <Navigate to="/payouts" replace /> },
+            { path: 'payment-providers', element: <Navigate to="/payouts" replace /> }
           ]
         }
       ]
