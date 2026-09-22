@@ -1,6 +1,7 @@
 package com.aegisterra.platform.presentation;
 
 import com.aegisterra.platform.application.settlement.SettlementService;
+import com.aegisterra.platform.application.agriculture.FarmerSubjectScope;
 import com.aegisterra.platform.infrastructure.security.AegisUserPrincipal;
 import com.aegisterra.platform.application.contracts.LedgerEntryResponse;
 import com.aegisterra.platform.application.contracts.PageResponse;
@@ -38,9 +39,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class SettlementController {
 
     private final SettlementService settlementService;
+    private final FarmerSubjectScope farmerSubjectScope;
 
-    public SettlementController(SettlementService settlementService) {
+    public SettlementController(SettlementService settlementService, FarmerSubjectScope farmerSubjectScope) {
         this.settlementService = settlementService;
+        this.farmerSubjectScope = farmerSubjectScope;
     }
 
     @GetMapping
@@ -60,13 +63,18 @@ public class SettlementController {
         @RequestParam(required = false) BigDecimal toAmount,
         @RequestParam(required = false) BigDecimal minAmount,
         @RequestParam(required = false) BigDecimal maxAmount,
-        @PageableDefault(size = 20) Pageable pageable
+        @PageableDefault(size = 20) Pageable pageable,
+        @AuthenticationPrincipal AegisUserPrincipal actor
     ) {
         String providerFilter = providerCode != null ? providerCode : provider;
         Instant from = fromDate != null ? fromDate : fromCreated;
         Instant to = toDate != null ? toDate : toCreated;
         BigDecimal min = fromAmount != null ? fromAmount : minAmount;
         BigDecimal max = toAmount != null ? toAmount : maxAmount;
+        if (farmerSubjectScope.isSubjectScoped(actor)) {
+            return settlementService.searchForFarmer(q, status, sourceModule, providerFilter, from, to, min, max,
+                farmerSubjectScope.requireSubjectFarmerId(actor), pageable);
+        }
         return settlementService.search(q, status, sourceModule, providerFilter, from, to, min, max, pageable);
     }
 
@@ -83,10 +91,11 @@ public class SettlementController {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant toDate,
         @RequestParam(required = false) BigDecimal fromAmount,
         @RequestParam(required = false) BigDecimal toAmount,
-        @PageableDefault(size = 20) Pageable pageable
+        @PageableDefault(size = 20) Pageable pageable,
+        @AuthenticationPrincipal AegisUserPrincipal actor
     ) {
         return search(q, status, sourceModule, providerCode, provider, fromDate, toDate, null, null,
-            fromAmount, toAmount, null, null, pageable);
+            fromAmount, toAmount, null, null, pageable, actor);
     }
 
     @PostMapping("/search")
@@ -108,7 +117,10 @@ public class SettlementController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('settlements:read')")
-    public SettlementResponse get(@PathVariable UUID id) {
+    public SettlementResponse get(@PathVariable UUID id, @AuthenticationPrincipal AegisUserPrincipal actor) {
+        if (farmerSubjectScope.isSubjectScoped(actor)) {
+            return settlementService.getForFarmer(id, farmerSubjectScope.requireSubjectFarmerId(actor));
+        }
         return settlementService.get(id);
     }
 
@@ -124,13 +136,25 @@ public class SettlementController {
 
     @GetMapping("/{id}/timeline")
     @PreAuthorize("hasAuthority('settlements:read')")
-    public List<SettlementTimelineEntryResponse> timeline(@PathVariable UUID id) {
+    public List<SettlementTimelineEntryResponse> timeline(
+        @PathVariable UUID id,
+        @AuthenticationPrincipal AegisUserPrincipal actor
+    ) {
+        if (farmerSubjectScope.isSubjectScoped(actor)) {
+            return settlementService.timelineForFarmer(id, farmerSubjectScope.requireSubjectFarmerId(actor));
+        }
         return settlementService.timeline(id);
     }
 
     @GetMapping("/{id}/ledger")
     @PreAuthorize("hasAuthority('settlements:read') or hasAuthority('ledger:read')")
-    public List<LedgerEntryResponse> ledger(@PathVariable UUID id) {
+    public List<LedgerEntryResponse> ledger(
+        @PathVariable UUID id,
+        @AuthenticationPrincipal AegisUserPrincipal actor
+    ) {
+        if (farmerSubjectScope.isSubjectScoped(actor)) {
+            return settlementService.ledgerForFarmer(id, farmerSubjectScope.requireSubjectFarmerId(actor));
+        }
         return settlementService.ledger(id);
     }
 

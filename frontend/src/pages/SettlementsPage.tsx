@@ -33,7 +33,8 @@ const SOURCE_MODULES = [
 ];
 
 export default function SettlementsPage() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, hasRole } = useAuth();
+  const isFarmer = hasRole('FARMER');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [sourceModule, setSourceModule] = useState('');
@@ -43,7 +44,8 @@ export default function SettlementsPage() {
 
   const providersQuery = useQuery({
     queryKey: ['payment-providers'],
-    queryFn: () => settlementsApi.listPaymentProviders()
+    queryFn: () => settlementsApi.listPaymentProviders(),
+    enabled: !isFarmer
   });
 
   const query = useQuery({
@@ -70,14 +72,34 @@ export default function SettlementsPage() {
           })
   });
 
+  const rows = query.data?.content ?? [];
+  const completedAmount = rows
+    .filter((row) => row.status === 'COMPLETED')
+    .reduce((total, row) => total + row.amount, 0);
+  const pendingAmount = rows
+    .filter((row) => ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'PROCESSING', 'SENT', 'CONFIRMED'].includes(row.status))
+    .reduce((total, row) => total + row.amount, 0);
+  const statusLabel = (status: string) =>
+    ({
+      COMPLETED: 'Paid',
+      PENDING: 'Pending review',
+      UNDER_REVIEW: 'Under review',
+      APPROVED: 'Approved for payment',
+      PROCESSING: 'Processing',
+      SENT: 'Sent to provider',
+      CONFIRMED: 'Payment confirmed',
+      FAILED: 'Payment failed',
+      REVERSED: 'Reversed'
+    })[status] ?? status.replace(/_/g, ' ');
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-textSecondary">Payouts</p>
-          <h1 className="text-3xl font-semibold">Payouts</h1>
+          <p className="text-sm text-textSecondary">{isFarmer ? 'My payouts' : 'Payouts'}</p>
+          <h1 className="text-3xl font-semibold">{isFarmer ? 'My payouts' : 'Payouts'}</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
+        {!isFarmer ? <div className="flex flex-wrap gap-2">
           <Link
             to="/settlements/dashboard"
             className="rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-surface"
@@ -116,13 +138,33 @@ export default function SettlementsPage() {
               Ledger
             </Link>
           ) : null}
-        </div>
+        </div> : null}
       </div>
+
+      {isFarmer ? (
+        <section className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-border border-l-4 border-l-primary bg-surface p-4 shadow-sm">
+            <p className="text-sm text-textSecondary">Records shown</p>
+            <p className="mt-1 text-2xl font-semibold">{query.data?.totalElements ?? 0}</p>
+            <p className="mt-1 text-xs text-textSecondary">Linked to your approved claims</p>
+          </div>
+          <div className="rounded-2xl border border-border border-l-4 border-l-emerald-500 bg-surface p-4 shadow-sm">
+            <p className="text-sm text-textSecondary">Paid in this view</p>
+            <p className="mt-1 text-2xl font-semibold">{completedAmount.toLocaleString()} RWF</p>
+            <p className="mt-1 text-xs text-textSecondary">Completed payouts</p>
+          </div>
+          <div className="rounded-2xl border border-border border-l-4 border-l-amber-500 bg-surface p-4 shadow-sm">
+            <p className="text-sm text-textSecondary">In progress</p>
+            <p className="mt-1 text-2xl font-semibold">{pendingAmount.toLocaleString()} RWF</p>
+            <p className="mt-1 text-xs text-textSecondary">Awaiting completion</p>
+          </div>
+        </section>
+      ) : null}
 
       <EnterpriseTable<Settlement>
         title="Settlement portfolio"
-        subtitle="Search by settlement number or source reference; filter by status, module, and provider"
-        rows={query.data?.content ?? []}
+        subtitle={isFarmer ? 'Payouts linked to your farmer profile and approved claims.' : 'Search by settlement number or source reference; filter by status, module, and provider'}
+        rows={rows}
         loading={query.isLoading}
         error={
           query.error instanceof ApiError
@@ -138,7 +180,7 @@ export default function SettlementsPage() {
           setQ(value);
         }}
         searchPlaceholder="Settlement number…"
-        filters={
+        filters={isFarmer ? null : (
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={status}
@@ -200,7 +242,7 @@ export default function SettlementsPage() {
               Advanced search
             </label>
           </div>
-        }
+        )}
         page={page}
         totalPages={query.data?.totalPages ?? 1}
         onPageChange={setPage}
@@ -222,7 +264,7 @@ export default function SettlementsPage() {
             sortValue: (r) => r.sourceModule,
             render: (r) => (
               <span>
-                {r.sourceModule}
+                {isFarmer ? 'Claim payout' : r.sourceModule}
                 {r.sourceReference ? (
                   <span className="text-textSecondary"> · {r.sourceReference}</span>
                 ) : null}
@@ -239,14 +281,14 @@ export default function SettlementsPage() {
             key: 'provider',
             header: 'Provider',
             sortValue: (r) => r.providerCode,
-            render: (r) => r.providerCode
+            render: (r) => (isFarmer ? r.paymentMethod.replace(/_/g, ' ') : r.providerCode)
           },
           {
             key: 'status',
             header: 'Status',
             sortValue: (r) => r.status,
             render: (r) => (
-              <span className="rounded-lg bg-background px-2 py-1 text-xs font-medium">{r.status}</span>
+              <span className="rounded-lg bg-background px-2 py-1 text-xs font-medium">{statusLabel(r.status)}</span>
             )
           }
         ]}

@@ -78,7 +78,6 @@ function enforceRbac(user: AuthUser, path: string, verb: string) {
       '/api/v1/roles',
       '/api/v1/permissions',
       '/api/v1/households',
-      '/api/v1/settlements',
       '/api/v1/ledger',
       '/api/v1/payment-providers',
       '/api/v1/tasks',
@@ -317,6 +316,10 @@ export async function handleDemoRequest(
   const paged = <T,>(rows: T[]) => page(rows, pageNo, pageSize);
   const body = parseBody(rawBody);
   const verb = method.toUpperCase();
+  const visibleSettlements = () =>
+    isFarmerUser(user)
+      ? settlements.filter((s) => claims.find((c) => c.id === s.sourceRecordId)?.farmerId === user.farmerId)
+      : settlements;
 
   if (path === '/api/v1/auth/login' && verb === 'POST') {
     const username = String(body.username ?? '').trim();
@@ -806,17 +809,18 @@ export async function handleDemoRequest(
   }
 
   if (path === '/api/v1/settlements' && (verb === 'GET' || verb === 'POST')) {
-    const rows = settlements.filter((s) => !q || s.settlementNumber.toLowerCase().includes(q));
+    const rows = visibleSettlements().filter((s) => !q || s.settlementNumber.toLowerCase().includes(q));
     return paged(rows);
   }
   if (path === '/api/v1/settlements/search' && verb === 'POST') {
-    return paged(settlements);
+    return paged(visibleSettlements());
   }
   const setId = idFrom(path, '/api/v1/settlements');
   if (setId && path === `/api/v1/settlements/${setId}`) {
-    return settlements.find((s) => s.id === setId);
+    return visibleSettlements().find((s) => s.id === setId);
   }
   if (setId && path.endsWith('/timeline')) {
+    if (!visibleSettlements().some((s) => s.id === setId)) deny();
     return [
       {
         fromStatus: 'PENDING',
@@ -828,6 +832,7 @@ export async function handleDemoRequest(
     ];
   }
   if (setId && path.endsWith('/ledger')) {
+    if (!visibleSettlements().some((s) => s.id === setId)) deny();
     return ledgerEntries.filter((e) => e.settlementId === setId);
   }
   if (path.startsWith('/api/v1/settlements/reports')) {

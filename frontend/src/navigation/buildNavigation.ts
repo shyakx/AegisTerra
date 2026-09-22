@@ -198,7 +198,7 @@ function bankCatalog(): NavGroup[] {
   ];
 }
 
-function farmerCatalog(farmerId?: string | null): NavGroup[] {
+function farmerCatalog(): NavGroup[] {
   return [
     {
       label: 'My workspace',
@@ -210,19 +210,7 @@ function farmerCatalog(farmerId?: string | null): NavGroup[] {
           permission: 'farmers:read'
         },
         { label: 'Payouts', to: '/payouts', icon: Wallet, permission: 'settlements:read' },
-        settingsItem()
-      ]
-    },
-    {
-      label: 'Records',
-      items: [
-        {
-          label: 'My profile',
-          to: farmerId ? `/farmers/${farmerId}` : '/farmers',
-          icon: Users,
-          permission: 'farmers:read'
-        },
-        { label: 'My farms', to: '/farms', icon: Map, permission: 'farms:read' }
+        { label: 'Settings', to: '/settings', icon: Settings }
       ]
     }
   ];
@@ -309,7 +297,7 @@ function supportCatalog(): NavGroup[] {
   ];
 }
 
-function catalogForRole(role: string | undefined, farmerId?: string | null): NavGroup[] {
+function catalogForRole(role: string | undefined): NavGroup[] {
   switch (role) {
     case 'SYSTEM_ADMIN':
       return adminCatalog();
@@ -319,7 +307,7 @@ function catalogForRole(role: string | undefined, farmerId?: string | null): Nav
     case 'FI_OFFICER':
       return bankCatalog();
     case 'FARMER':
-      return farmerCatalog(farmerId);
+      return farmerCatalog();
     case 'AGGREGATOR':
       return aggregatorCatalog();
     case 'GOVERNMENT_ANALYST':
@@ -347,9 +335,9 @@ export function portalHeader(roles: string[] | undefined): { eyebrow: string; ti
   return HEADER_BY_ROLE.SYSTEM_ADMIN;
 }
 
-export function buildNavigation({ hasPermission, hasRole, farmerId }: AuthHelpers): NavGroup[] {
+export function buildNavigation({ hasPermission, hasRole }: AuthHelpers): NavGroup[] {
   const role = ROLE_ORDER.find((code) => hasRole(code));
-  return catalogForRole(role, farmerId)
+  return catalogForRole(role)
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => !item.permission || hasPermission(item.permission))

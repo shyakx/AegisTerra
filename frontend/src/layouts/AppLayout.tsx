@@ -6,11 +6,30 @@ import { buildNavigation, portalHeader } from '../navigation/buildNavigation';
 import { PageTransition } from '../motion/PageTransition';
 import { PoweredBy } from '../components/PoweredBy';
 
+const ROLE_LABELS: Record<string, string> = {
+  SYSTEM_ADMIN: 'System administrator',
+  INSURANCE_ADMIN: 'Insurance administrator',
+  INSURANCE_OFFICER: 'Insurance officer',
+  FI_OFFICER: 'Bank officer',
+  GOVERNMENT_ANALYST: 'Government analyst',
+  DEVELOPMENT_PARTNER: 'Development partner',
+  AGGREGATOR: 'Aggregator officer',
+  FARMER: 'Farmer',
+  AUDITOR: 'Auditor',
+  SUPPORT: 'Support agent'
+};
+
+function roleLabel(role: string | undefined): string {
+  return role ? ROLE_LABELS[role] ?? role.replace(/_/g, ' ').toLowerCase() : 'Portal user';
+}
+
 export default function AppLayout() {
   const navigate = useNavigate();
   const { user, logout, hasPermission, hasRole, hasAnyPermission } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const header = portalHeader(user?.roles);
+  const identityName = user?.displayName || user?.username || 'Signed in';
+  const identityRole = roleLabel(user?.roles?.[0]);
 
   const visibleGroups = useMemo(
     () => buildNavigation({ hasPermission, hasRole, hasAnyPermission, farmerId: user?.farmerId }),
@@ -75,8 +94,8 @@ export default function AppLayout() {
         </div>
         <div className="relative z-10 mt-4 shrink-0 border-t border-white/10 pt-4">
           <div className="rounded-2xl bg-white/10 px-4 py-3">
-            <p className="text-sm font-medium">{user?.displayName || user?.username || 'Signed in'}</p>
-            <p className="mt-0.5 text-xs text-emerald-100/80">{user?.roles?.[0] ?? 'Operator'}</p>
+            <p className="text-sm font-medium">{identityName}</p>
+            <p className="mt-0.5 text-xs text-emerald-100/80">{identityRole}</p>
           </div>
           <PoweredBy className="mt-3 text-center text-emerald-100/80" />
         </div>
@@ -130,14 +149,17 @@ export default function AppLayout() {
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
-                className="rounded-full border border-border p-2 text-textSecondary hover:bg-background"
+                className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-2 text-sm font-medium text-textSecondary hover:bg-background"
                 aria-label="Sign out"
                 onClick={handleLogout}
               >
                 <LogOut className="h-5 w-5" />
+                <span>Sign out</span>
               </button>
-              <div className="hidden rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white sm:block">
-                {user?.username ?? 'Portal'}
+              <div className="rounded-full bg-primary px-3 py-2 text-sm font-semibold text-white sm:px-4">
+                <span>{identityName}</span>
+                <span className="mx-1.5 text-white/60">|</span>
+                <span>{identityRole}</span>
               </div>
             </div>
           </div>

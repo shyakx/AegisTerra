@@ -343,6 +343,7 @@ const LOGIN_SHORTCUT_USERNAMES = new Set([
   'fi.officer',
   'aggregator',
   'gov.analyst',
+  'farmer1',
   'auditor'
 ]);
 

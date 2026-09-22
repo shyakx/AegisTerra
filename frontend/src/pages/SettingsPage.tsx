@@ -1,10 +1,11 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { changePassword, updateProfile } from '../api/auth';
 import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../auth/AuthContext';
+import { notificationsApi, type NotificationPreference } from '../api/notifications';
 
 const CHECKS: Array<{ label: string; path: string; note: string; permission?: string }> = [
   { label: 'Dashboard', path: '/app', note: 'Role overview' },
@@ -32,6 +33,18 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState({ email: '', displayName: '' });
   const [password, setPassword] = useState({ currentPassword: '', newPassword: '' });
   const [message, setMessage] = useState<string | null>(null);
+  const preferencesQuery = useQuery({
+    queryKey: ['notification-preferences'],
+    queryFn: () => notificationsApi.preferences(),
+    enabled: hasPermission('notifications:read')
+  });
+  const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
+
+  useEffect(() => {
+    if (preferencesQuery.data) {
+      setPreferences(preferencesQuery.data);
+    }
+  }, [preferencesQuery.data]);
 
   const visibleChecks = CHECKS.filter((item) => !item.permission || hasPermission(item.permission)).map((item) => {
     if (item.path === '/farmers' && user?.farmerId) {
@@ -71,13 +84,21 @@ export default function SettingsPage() {
     },
     onError: (err) => setMessage(err instanceof ApiError ? err.message : 'Password change failed')
   });
+  const preferencesMutation = useMutation({
+    mutationFn: () => notificationsApi.updatePreferences(preferences),
+    onSuccess: (updated) => {
+      setPreferences(updated);
+      setMessage('Notification preferences updated');
+    },
+    onError: (err) => setMessage(err instanceof ApiError ? err.message : 'Notification preferences update failed')
+  });
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Account"
-        title="Platform information"
-        description="Product identity, your profile, and password settings."
+        title="Your account"
+        description="Keep your contact details, security, and platform updates current."
       />
 
       {message ? (
@@ -86,8 +107,9 @@ export default function SettingsPage() {
         </p>
       ) : null}
 
-      <section className="rounded-2xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold">Build</h2>
+      <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">About AegisTerra</p>
+        <h2 className="mt-1 text-lg font-semibold">Platform details</h2>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-xs uppercase tracking-wide text-textSecondary">Product</dt>
@@ -110,7 +132,7 @@ export default function SettingsPage() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <form
-          className="space-y-3 rounded-2xl border border-border bg-surface p-6"
+          className="space-y-3 rounded-2xl border border-border bg-surface p-6 shadow-sm"
           onSubmit={(e) => {
             e.preventDefault();
             profileMutation.mutate();
@@ -138,7 +160,7 @@ export default function SettingsPage() {
         </form>
 
         <form
-          className="space-y-3 rounded-2xl border border-border bg-surface p-6"
+          className="space-y-3 rounded-2xl border border-border bg-surface p-6 shadow-sm"
           onSubmit={(e) => {
             e.preventDefault();
             passwordMutation.mutate();
@@ -166,6 +188,51 @@ export default function SettingsPage() {
           </button>
         </form>
       </section>
+
+      {hasPermission('notifications:read') ? (
+        <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Notification preferences</h2>
+              <p className="mt-1 text-sm text-textSecondary">Choose which claim and payout updates reach you.</p>
+            </div>
+            <button
+              type="button"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              disabled={preferencesMutation.isPending || preferences.length === 0}
+              onClick={() => preferencesMutation.mutate()}
+            >
+              Save preferences
+            </button>
+          </div>
+          <div className="mt-4 divide-y divide-border">
+            {preferences.map((preference) => (
+              <label key={`${preference.channel}-${preference.eventType}`} className="flex items-center justify-between gap-4 py-3 text-sm">
+                <span>
+                  <span className="block font-medium">{preference.eventType.replace(/_/g, ' ')}</span>
+                  <span className="text-xs text-textSecondary">{preference.channel}</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={preference.enabled}
+                  onChange={(event) =>
+                    setPreferences((current) =>
+                      current.map((item) =>
+                        item.channel === preference.channel && item.eventType === preference.eventType
+                          ? { ...item, enabled: event.target.checked }
+                          : item
+                      )
+                    )
+                  }
+                />
+              </label>
+            ))}
+            {!preferencesQuery.isLoading && preferences.length === 0 ? (
+              <p className="py-3 text-sm text-textSecondary">No notification preferences are configured for this account.</p>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {visibleChecks.length > 0 ? (
       <section className="rounded-2xl border border-border bg-surface p-6">

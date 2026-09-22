@@ -87,8 +87,29 @@ public class SettlementService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<SettlementResponse> searchForFarmer(
+        String q, String status, String sourceModule, String providerCode,
+        Instant fromCreated, Instant toCreated, BigDecimal minAmount, BigDecimal maxAmount,
+        UUID farmerId, Pageable pageable
+    ) {
+        String statusFilter = status == null || status.isBlank() ? null : SettlementStatus.parse(status).name();
+        return PageResponse.from(settlementRepository.searchForFarmer(
+            blank(q), statusFilter, blank(sourceModule), blank(providerCode), minAmount != null,
+            minAmount == null ? BigDecimal.ZERO : minAmount, maxAmount != null,
+            maxAmount == null ? BigDecimal.ZERO : maxAmount, fromCreated != null,
+            fromCreated == null ? Instant.EPOCH : fromCreated, toCreated != null,
+            toCreated == null ? Instant.EPOCH : toCreated, farmerId, pageable
+        ).map(this::toResponse));
+    }
+
+    @Transactional(readOnly = true)
     public SettlementResponse get(UUID id) {
         return toResponse(lifecycleService.require(id));
+    }
+
+    @Transactional(readOnly = true)
+    public SettlementResponse getForFarmer(UUID id, UUID farmerId) {
+        return toResponse(requireForFarmer(id, farmerId));
     }
 
     @Transactional(readOnly = true)
@@ -102,9 +123,26 @@ public class SettlementService {
     }
 
     @Transactional(readOnly = true)
+    public List<SettlementTimelineEntryResponse> timelineForFarmer(UUID id, UUID farmerId) {
+        requireForFarmer(id, farmerId);
+        return timeline(id);
+    }
+
+    @Transactional(readOnly = true)
     public List<LedgerEntryResponse> ledger(UUID id) {
         lifecycleService.require(id);
         return ledgerService.entriesForSettlement(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LedgerEntryResponse> ledgerForFarmer(UUID id, UUID farmerId) {
+        requireForFarmer(id, farmerId);
+        return ledger(id);
+    }
+
+    private SettlementEntity requireForFarmer(UUID id, UUID farmerId) {
+        return settlementRepository.findByIdForFarmer(id, farmerId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Settlement not found"));
     }
 
     @Transactional

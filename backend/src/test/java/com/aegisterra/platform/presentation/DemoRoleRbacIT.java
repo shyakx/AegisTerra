@@ -96,7 +96,7 @@ class DemoRoleRbacIT extends SharedPostgresContainer {
     }
 
     @Test
-    void farmerCanAccessOwnRegistryButNotUsersOrSettlements() throws Exception {
+    void farmerCanAccessOwnRegistryAndSettlementsButNotUsers() throws Exception {
         Cookie at = loginCookie("farmer.demo", "Demo@1234!Aa");
         mockMvc.perform(get("/api/v1/farmers").cookie(at)).andExpect(status().isOk())
             .andExpect(jsonPath("$.totalElements").value(1))
@@ -105,7 +105,10 @@ class DemoRoleRbacIT extends SharedPostgresContainer {
         mockMvc.perform(get("/api/v1/policies").cookie(at)).andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/claims").cookie(at)).andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/users").cookie(at)).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/v1/settlements").cookie(at)).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/settlements").cookie(at)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/auth/me").cookie(at))
+            .andExpect(jsonPath("$.permissions", hasItem("settlements:read")))
+            .andExpect(jsonPath("$.permissions", not(hasItem("settlements:write"))));
     }
 
     @Test

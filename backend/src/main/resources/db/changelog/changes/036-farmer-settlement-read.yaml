@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-farmer-settlement-read
+      author: aegisterra
+      comment: Allow farmers to view their own claim settlements through subject-scoped backend queries.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO role_permissions (id, role_id, permission_id, created_at, updated_at, version, status, deleted)
+              SELECT gen_random_uuid(), '11111111-1111-1111-1111-111111111007', p.id,
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, 'ACTIVE', FALSE
+              FROM permissions p
+              WHERE p.deleted = false AND p.code = 'settlements:read'
+                AND NOT EXISTS (
+                  SELECT 1 FROM role_permissions x
+                  WHERE x.role_id = '11111111-1111-1111-1111-111111111007'
+                    AND x.permission_id = p.id
+                );
